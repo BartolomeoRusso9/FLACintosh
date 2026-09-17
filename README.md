@@ -267,4 +267,4 @@ cannot animate its pieces independently — a line of lyrics needs both.
 
 ## Licence
 
-Not chosen yet.
+MIT — see [LICENSE](LICENSE). [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine), the one dependency, is MIT too.
