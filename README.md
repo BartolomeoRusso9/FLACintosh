@@ -1,307 +1,226 @@
 # FLACintosh
 
-A macOS music player for local files, built around the one thing no other
-player on the platform does: **word-by-word synchronised lyrics.**
+**A music player for your own lossless library, with lyrics that light up
+word by word.**
 
-## Why
+FLACintosh plays the music you own — FLAC, ALAC and every other format —
+from a folder on your Mac or from your own Jellyfin or Navidrome server. It
+looks and feels like Apple Music, and it does the one thing Apple Music and
+Spotify will not do for your files: show **synchronised lyrics that follow
+the singer syllable by syllable**.
 
-Apple Music will not render timed lyrics for a local file. It strips the
-timing out of the tag and shows flat text — so a file carrying this:
+## Features
 
-```
-[00:08.75]<00:08.75>Sento <00:09.05>un<00:09.22>ra-<00:09.41>ta- <00:09.90>ta
-```
+- **Word-by-word lyrics.** Each syllable fills in as it is sung. Lyrics come
+  from a `.lrc` file next to the song or from the file itself, and when a
+  song has none, **Find Lyrics** looks them up for you.
+- **Your whole library in one place.** A music folder and any number of
+  Jellyfin or Navidrome servers, shown together as albums, artists and songs,
+  with search.
+- **Real audio quality.** Now Playing shows the actual bit depth and sample
+  rate of what is playing — 24 bit · 96 kHz, not a guess.
+- **A beautiful Now Playing screen.** Big cover art, colours taken from the
+  album, the queue, shuffle, repeat, AutoPlay and Crossfade. Spotify Canvas
+  videos play in place of the cover when you have them.
+- **Play anywhere.** AirPlay, and **Google Cast** — Chromecast, TVs with
+  Google TV, Nest speakers and speaker groups. Formats a Cast device cannot
+  play are converted automatically.
+- **Recap.** Your own Wrapped: minutes listened, top songs, artists and
+  albums, when you listen and your longest streak.
+- **Discord.** Show what you are listening to on your Discord profile.
+- **Works with your Mac.** Control Center, the menu bar, your keyboard's
+  media keys and AirPods controls all work.
+- **Download music (optional).** Search Spotify and download in lossless
+  quality through [SpotiFLAC](https://github.com/BartolomeoRusso9/SpotiFLAC-Module-Version).
+- **Edit tags** — title, artist, album and more — with **Get Info…**.
 
-displays as `[00:08.75]Sento unra-ta- ta`, brackets and all. The scrolling
-lyrics Apple Music shows for streamed tracks come from Apple's servers,
-matched by catalogue ID; a local file has no ID and never gets them.
+## Requirements
 
-Spotify is worse: its lyrics come from Musixmatch keyed on a Spotify track
-ID, so local files get nothing at all, not even line-level.
+- macOS 15 Sequoia or later
+- Apple Silicon or Intel Mac
 
-The data exists — [SpotiFLAC](https://github.com/BartolomeoRusso9/SpotiFLAC-Module-Version)
-writes it with `--save-lrc`. What is missing is something to draw it.
+## Installation
 
-## Status
+1. Download the latest **FLACintosh-x.y.z.dmg** from the
+   [Releases](../../releases) page.
+2. Open it and drag **FLACintosh** into **Applications**.
+3. Open FLACintosh. The first time, macOS will say it cannot verify the
+   developer: open **System Settings → Privacy & Security**, scroll down and
+   click **Open Anyway**. You only need to do this once.
 
-**Feature complete.** Reads a folder — or a Navidrome or Jellyfin server —
-into a library, shows it the way a music app should, plays it with lyrics one
-syllable at a time, goes and finds those lyrics when a file has none, and
-plays on Cast devices, shows up on Discord and sums up what you listened to.
+## Getting started
 
-- [x] Playback, metadata, real sample rate / bit depth
-- [x] Enhanced-LRC parser with per-syllable timing
-- [x] Word-by-word lyrics view
-- [x] Now Playing look: brand palette, cover art, colours drawn from the sleeve
-- [x] Library: folder scan, sidebar, album grid, songs, artists, search
-- [x] Queue: shuffle, repeat, next/previous, advance at end of track
-- [x] Lyrics from Apple and LRCLIB when a file has none, per track or per album
-- [x] Optional SpotiFLAC bridge for downloading
-- [x] Search Spotify and download through a SpotiFLAC server
-- [x] Navidrome / Subsonic and Jellyfin servers
-- [x] Metadata editor
-- [x] Discord Rich Presence
-- [x] `MPNowPlayingInfoCenter` + media keys: Control Center, menu bar, keyboard
-- [x] Google Cast: Chromecast, Google TV, Nest speakers and groups — unsupported formats and hi-res converted on the fly
-- [x] Wrapped-style listening summary: the Recap
-- [x] Animation polish
+**Play music from your Mac.** FLACintosh reads your **Music** folder. To use
+another one, click **Choose Folder…** at the bottom of the sidebar (or press
+⇧⌘O). Subfolders are included.
 
-## Running it
+**Play music from a server.** Click **Add Server…** in the sidebar, choose
+**Jellyfin** or **Navidrome / Subsonic**, and enter the server address with
+your username and password. The password is stored in your Mac's Keychain;
+when macOS asks for your Mac's password to let FLACintosh read it, choose
+**Always Allow**.
 
-**Xcode is not required** — the Command Line Tools are enough. macOS 15 or
-newer.
+Each source appears under **Sources** in the sidebar, where you can hide it,
+reload it or remove it. When files change, click the **reload** button in the
+toolbar (or press ⌘R).
 
-```bash
-swift run FLACintosh                                  # the library
-swift run FLACintosh "/path/to/track.flac"            # play that track straight away
-```
+**Play a single file** by dragging it onto the window or with **File → Open
+File…** (⌘O).
 
-The library is a folder — `~/Music` unless you pick another with ⇧⌘O. It is
-re-read on launch and with ⌘R; there is no database to go stale.
+## Lyrics
 
-The first build takes several minutes: SFBAudioEngine compiles a pile of C++
-decoders. After that it is seconds.
+FLACintosh shows lyrics from, in this order:
 
-Lyrics are looked for in two places, in order:
+1. a `.lrc` file with the same name as the song, in the same folder;
+2. lyrics embedded in the song file.
 
-1. a `.lrc` sidecar next to the audio file, same name
-2. the file's own embedded lyrics tag
+Lyrics with per-word timing (Enhanced LRC) light up word by word; ordinary
+LRC lyrics highlight line by line.
 
-Both are what SpotiFLAC writes, so a track downloaded with `--save-lrc` works
-with no further setup. The sidecar wins because it is the one a person can
-fix by hand.
+**No lyrics?** On the Now Playing screen click **Find Lyrics**. To do a
+whole album at once, click **Find lyrics for … tracks** on the album page; for a single song,
+right-click it and choose **Find Lyrics**. FLACintosh asks Apple Music first
+(word-by-word timing) and LRCLIB second, and saves what it finds as a `.lrc`
+file next to the song, so it is there next time.
 
-## Packaging
+While lyrics are playing you can scroll freely — click **Back to Current
+Line** to jump back — or click any line to skip to that part of the song.
 
-```bash
-scripts/package.sh                       # dist/FLACintosh.app and dist/FLACintosh-0.1.0.dmg
-VERSION=0.2.0 BUILD_NUMBER=2 scripts/package.sh
-ARCHS=arm64 scripts/package.sh           # Apple Silicon only, one build instead of two
-```
+## Now Playing
 
-Still no Xcode. The script builds a release for Apple Silicon and Intel,
-puts the app bundle together — Info.plist, icon, and the decoder frameworks
-SFBAudioEngine links, which must travel inside the app — signs it ad hoc and
-wraps it in a disk image.
+Click the player bar at the bottom of the window to open Now Playing; press
+**Esc** to close it.
 
-The icon is `Assets/AppIcon.png`, 1024×1024. If it is missing the script
-draws a placeholder with `scripts/make-icon.swift`; replace the file to
-change it.
+- Click the **artist** or **album** name to open its page in the library.
+- The buttons in the bottom-right corner switch between **lyrics** and the
+  **queue**. The queue is also where **AutoPlay** (keep playing when the queue
+  ends) and **Crossfade** are.
+- If a song has a Canvas video (an `.mp4` with the same name next to it), it
+  plays silently in place of the cover.
 
-The first launch of the app picks up the servers, folder and view choices
-saved by `swift run`, which keeps its settings under a different name.
+## Playing on other speakers and TVs
 
-Ad hoc is not a Developer ID, so on any Mac but this one the first launch is
-blocked: **System Settings → Privacy & Security → Open Anyway**. Removing that
-step takes an Apple Developer account, `codesign` with its certificate and
-`xcrun notarytool`.
+**AirPlay** — click the AirPlay button next to the volume slider and pick a
+speaker or Apple TV.
 
-## Finding lyrics for a file that has none
+**Google Cast** — click the Cast button next to it. Every Cast device on your
+network is listed; choose one and the music moves there, from the same point
+in the song. Choose **This Mac** to bring it back.
 
-The whole point of the app is words that are timed to the syllable, so
-looking for them is built in rather than left to the user and a browser.
-**Find Lyrics** on the Now Playing screen does one track; an album page does
-the rest of the record; right-clicking a song does just that song.
-
-Two providers, asked in this order:
-
-1. **Apple**, through a public relay — the only source that times
-   *syllables*, which is what makes the word-by-word display possible
-2. **LRCLIB** — free, fast, and line-level
-
-The order matters and is not a preference. Every provider is asked at once
-but they are *read* in order: LRCLIB answers in about a tenth of a second
-against Apple's one, so taking whoever finishes first turns the list into a
-set and reliably yields plain line-level lyrics — the word-by-word ones the
-order asked for would never get used.
-
-What comes back is written as an `.lrc` next to the audio file, which is
-where the app looks first anyway: the result survives a restart, can be
-fixed by hand, and is read by anything else that understands sidecars. A
-folder that cannot be written to falls back to a cache in Application
-Support.
-
-This is a Swift port of SpotiFLAC's `core/lyrics.py`, ported rather than
-shelled out to because it is the feature the app exists for and cannot
-depend on a `pip install`.
-
-```bash
-swift run LyricsCheck --fetch "Title" "Artist" [album] [duration]
-```
+- Songs from a Jellyfin or Navidrome server play straight from the server,
+  so they keep playing even if your Mac goes to sleep.
+- Songs from your Mac are sent from the Mac, which needs to stay awake. The
+  first time, macOS asks whether FLACintosh may **accept incoming network
+  connections**: choose **Allow** — that is the Cast device fetching the music.
+- Hi-res files (above 96 kHz / 24 bit) and formats Cast devices cannot play,
+  such as ALAC, AIFF, APE, WavPack or DSD, are converted automatically.
 
 ## Recap
 
-**Recap**, in the sidebar, is a Wrapped-style summary of what you played in
-FLACintosh — for the last 30 days, this year or all time: minutes listened,
-top songs, artists and albums, when in the day you listen, your longest
-streak of days and your biggest one.
+Open **Recap** in the sidebar to see your listening for the **last 30 days**,
+**this year** or **all time**: minutes listened, your top songs, artists and
+albums, what time of day you listen most, and your longest streak.
 
-A play counts the way Last.fm counts a scrobble: half the song, or four
-minutes of a long one, and never a track under thirty seconds. Only time
-actually heard is added. The history is one JSON line per play in
-`~/Library/Application Support/FLACintosh/listening-history.jsonl`, never
-sent anywhere, and can be cleared from the bottom of the Recap.
+A song counts once you have listened to half of it (or four minutes of a long
+one); skipped songs do not count. Double-click a top song to play it. Your
+history stays on your Mac, and **Clear Listening History…** at the bottom of
+the Recap deletes it.
 
 ## Discord
 
-Settings (⌘,) → **Discord** shows the song on your Discord profile as
-"Listening to", with the artist, album, a progress bar and the cover.
+FLACintosh can show **Listening to** on your Discord profile, with the song,
+artist, album, cover and a progress bar.
 
-Discord only shows Rich Presence for an application registered with it, and
-the application's name is what appears. Create one at
-[discord.com/developers/applications](https://discord.com/developers/applications),
-call it FLACintosh, and paste its **Application ID** in Settings. The Discord
-desktop app has to be running: presence goes over its local socket, not the
-internet. Covers are looked up on Apple Music by artist and album — Discord
-can only show a picture with a public address — and only one whose artist
-matches is used.
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
+   and click **New Application**. Name it **FLACintosh** — Discord shows this
+   name on your profile.
+2. Copy the **Application ID** from the application's page.
+3. In FLACintosh open **Settings** (⌘,), turn on **Show what you're listening
+   to** in the **Discord** section and paste the Application ID.
 
-## Google Cast
+The Discord desktop app must be running. If nothing shows up, check that
+**Share your detected activities with others** is on in Discord's **Activity
+Privacy** settings.
 
-The Cast button next to AirPlay plays on any Google Cast receiver on the
-network: Chromecast, TVs with Google TV, Nest speakers, speaker groups.
-Server tracks the receiver can decode go to it straight from the server, so
-they keep playing with the Mac asleep. Local files are served from the Mac,
-and what a receiver cannot play — ALAC, AIFF, APE, WavPack, DSD, anything over
-96 kHz / 24 bit — is converted to FLAC first. The first time, macOS asks
-whether FLACintosh may accept incoming connections: that is the receiver
-fetching the music.
+## Downloading music with SpotiFLAC
 
-## Servers
+This is optional — FLACintosh works fine without it. Open **Download** in the
+sidebar.
 
-Navidrome (or anything speaking Subsonic) and Jellyfin, added from the
-sidebar. Passwords go in the keychain.
+**With a SpotiFLAC server** (for example running next to Jellyfin): enter the
+server address and its access token. Then type in the search field to search
+Spotify. Click an album, playlist or artist to see its tracks, and click
+**Download** — or select just the tracks you want. Anything already in your
+library is marked **In Library**. When downloads finish, your Jellyfin
+library is refreshed automatically.
 
-Tracks are fetched whole to a cache before they play, because SFBAudioEngine
-reads files and not streams — its input source asserts `url.isFileURL`. That
-turns out to be worth something rather than merely necessary: the cached file
-carries its own tags and artwork, so covers, metadata and the lyrics search
-all work exactly as they do for a local library.
+**With SpotiFLAC on this Mac:** install it with `pip install spotiflac`, then
+click **Open TUI** to use it in Terminal. It downloads into your library
+folder.
 
-The cache is capped at **2 GB** by default — enough for an evening of
-lossless listening, since a FLAC album is 250-400 MB — and the limit is
-yours to change in Settings (⌘,), or to remove. When it is exceeded the
-least recently played tracks go first, ordered by modification date rather
-than access date: a volume mounted `noatime` makes every file look equally
-old, and eviction becomes random. A local folder library uses none of this.
+## Settings
 
-## SpotiFLAC
+Open **FLACintosh → Settings** (⌘,).
 
-Optional, and genuinely so: nothing is bundled, nothing here is required,
-and the app carries on without it. The Download shelf offers two ways in.
+- **Discord** — see [Discord](#discord).
+- **Server track cache** — songs from a server stream, but FLACintosh keeps
+  the part of each file with its cover, tags and lyrics. The cache is limited
+  to 2 GB by default; you can change the limit or empty the cache here.
 
-### A SpotiFLAC server
+## Keyboard shortcuts
 
-SpotiFLAC started with `--web` — in Docker, say, next to Jellyfin — is
-reached over its own web API. Give the Download shelf its address and the
-token set with `--web-token` / `SPOTIFLAC_WEB_TOKEN` (kept in the Keychain),
-and the window's search field searches Spotify on that shelf:
-
-- albums, songs and playlists, each marked **In Library** when the library
-  already has it — same title and artist, edition notes such as
-  "(Remastered)" ignored;
-- **Download** resolves the link on the server, then queues every track with
-  the download settings saved there, so the result is exactly what the
-  server's own page would have produced;
-- progress comes over the server's WebSocket; when a batch ends, each
-  Jellyfin is asked to scan and the servers are read again shortly after.
-
-In token mode the server keeps one working track list, shared with anyone
-on its web page at the same moment, so downloads from here run one after
-another.
-
-### SpotiFLAC on this Mac
-
-```bash
-pip install spotiflac
-```
-
-Installed, it is found through a login shell (an app launched from Finder
-inherits almost no `PATH`, and SpotiFLAC lives wherever the user's Python
-does), and the Download shelf opens its terminal UI (`--tui`) in Terminal, in
-the library folder — so what it downloads, `--save-lrc` sidecars included, is
-already where ⌘R will find it.
-
-## Checking the parser
-
-```bash
-swift run LyricsCheck                    # the built-in fixtures
-swift run LyricsCheck path/to/file.lrc   # dump a real file, syllable by syllable
-```
-
-Not a `swift test` target, and deliberately so: both XCTest and
-swift-testing ship inside `Xcode.app`, so a test target cannot build with
-only the Command Line Tools installed. The checks are an executable instead,
-which runs anywhere the toolchain does. Once Xcode is present this converts
-to a test target almost mechanically — the assertions are already
-one-per-behaviour.
-
-## How it is put together
-
-| Target | What it is |
+| Shortcut | Action |
 | --- | --- |
-| `SyncedLyrics` | The parser and its model. No UI, no dependencies — the part worth testing. |
-| `FLACintosh` | The SwiftUI app. |
-| `LyricsCheck` | The parser's checks, and a dump mode for real files. |
+| ⌘O | Open a file |
+| ⇧⌘O | Choose the library folder |
+| ⌘R | Reload the library |
+| ⌘, | Settings |
+| Esc | Close Now Playing |
+| Media keys | Play/pause, next, previous |
 
-Audio comes from [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine):
-FLAC, ALAC, everything else, plus the metadata and the decoder's own view of
-sample rate and bit depth. That last point matters — a `.m4a` is ALAC or AAC
-depending on what is inside it, and a player like this should say which
-rather than guess from the extension.
+## Privacy
 
-### The lyric model
+FLACintosh has no account, no analytics and no tracking. Your library,
+listening history and settings stay on your Mac; server passwords are kept
+in the Keychain. The app only goes online to:
 
-`Syllable.text` keeps its own trailing space, so concatenating a line's
-syllables reproduces the line exactly. The alternative — a
-`isWordContinuation` flag — is a rule every renderer has to remember, and
-forgetting it is how "make expressions" comes out as "makeexpressions".
+- talk to **your own servers** and Cast devices;
+- look up **lyrics** when you click Find Lyrics (Apple Music, through a
+  public relay, and LRCLIB — only the song's title, artist, album and length
+  are sent);
+- look up **album covers on Apple Music** for Discord, only if the Discord
+  feature and **Show album art** are on.
 
-Plain LRC parses too, as a line holding a single syllable, so nothing
-downstream has to ask which dialect a file is in.
+## Troubleshooting
 
-### The look
+**"FLACintosh can't be opened because Apple cannot check it"** — see step 3
+of [Installation](#installation).
 
-The Now Playing screen, and Apple Music's palette: **pink `#FF4E6B`**, **red
-`#FF0436`**, **white `#FFFFFF`**. Those three are the only colours the app is
-allowed to invent. Everything else on screen comes off the record itself.
+**My Cast device is not listed** — make sure it is on the same network as
+your Mac, and that FLACintosh is allowed in **System Settings → Privacy &
+Security → Local Network**.
 
-The ground is the cover's own colours: four dominant tints pulled out of a
-48-pixel thumbnail, pinned to a brightness white text can be read over, and
-drifting behind the words as soft radial blobs. No blur filter is involved —
-a blur is re-rasterised whenever what is under it moves, while a gradient
-that only slides and scales is a transform the render server animates by
-itself. That is what lets the background move behind lyrics that are already
-redrawing every frame.
+**A song from my Mac will not play on the Cast device** — FLACintosh needs
+to accept incoming connections. Check **System Settings → Network →
+Firewall → Options** and allow FLACintosh.
 
-A washed-out sleeve gets its saturation lifted; a vivid one is left exactly
-as it was (clamping everything to one value turned two different browns into
-the same brown); a genuinely grey one stays grey, because the hue a grey
-reports is rounding error and borrowing it would tint the window a colour
-that is nowhere on the cover. A file with no cover falls back to pink and
-red.
+**An AirPlay device shows up but will not connect** — some devices shown in
+the AirPlay list are bridges for older AirPlay 1 speakers (for example
+AirConnect for Chromecasts), which macOS cannot use as a system output. Use
+the Cast button for those instead.
 
-The stage is dark in both system appearances, and that is a decision rather
-than an oversight: white lyrics over an album's own colours only work on a
-dark ground, and flipping to a light one would mean giving up either the
-artwork tint or the white text. Apple Music makes the same call.
+**macOS keeps asking for my password** — when asked about the Keychain, choose
+**Always Allow**. You may be asked again after installing a new version.
 
-### The effect
+**Lyrics highlight whole lines, not words** — those lyrics only have
+line-level timing. Try **Find Lyrics** again later: word-by-word lyrics
+come from Apple Music and are not available for every song.
 
-Not "colour the current word". Each syllable fills white across its own
-duration behind a soft gradient edge, so the light travels *through* a long
-word; the lines around the current one dim, blur and shrink slightly rather
-than vanishing. That continuous motion is what the eye reads as following a
-voice.
+## Building from source
 
-The brand is used as light rather than as paint: a pink-to-red band rides the
-front of the sweep and is gone the moment the syllable ends. Colouring whole
-words instead would be unreadable at thirty points, and would say nothing
-about where in the word the voice is.
+See [DEVELOPMENT.md](DEVELOPMENT.md).
 
-`SyllableFlow` exists because an `HStack` never wraps and a single `Text`
-cannot animate its pieces independently — a line of lyrics needs both.
+## License
 
-## Licence
-
-MIT — see [LICENSE](LICENSE). [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine), the one dependency, is MIT too.
+FLACintosh is released under the [MIT License](LICENSE). It uses
+[SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine), also MIT.
