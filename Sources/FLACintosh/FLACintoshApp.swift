@@ -158,6 +158,7 @@ struct RootView: View {
         // invisible, but still applying its dark colour scheme to the window.
         ZStack {
             libraryScreen
+                .environment(\.transportClockVisible, !showingNowPlaying)
 
             if showingNowPlaying {
                 NowPlayingView(

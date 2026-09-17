@@ -34,7 +34,12 @@ extension PlaybackModel {
 
     /// Back to this Mac, from where the device had got to.
     func stopCasting() {
-        guard cast.isActive else { return }
+        guard cast.isActive else {
+            // Nothing connected here, but the TV may still be playing what an
+            // earlier run of the app sent it.
+            Task { await cast.stopLeftoverSession() }
+            return
+        }
         let at = cast.estimatedTime
         let resume = isPlaying
         cast.disconnect()

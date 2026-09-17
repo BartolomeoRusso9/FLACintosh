@@ -149,6 +149,11 @@ final class StageView: NSView {
             drift.repeatCount = .infinity
             drift.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             drift.isRemovedOnCompletion = false
+            // A drift over eighteen seconds does not need sixty frames a
+            // second. Left to the display's rate, the render server redrew
+            // four window-sized gradients sixty times a second for motion of
+            // a pixel or two per frame — a steady cost, and heat.
+            drift.preferredFrameRateRange = CAFrameRateRange(minimum: 8, maximum: 15, preferred: 12)
             blob.add(drift, forKey: "drift")
         }
         CATransaction.commit()

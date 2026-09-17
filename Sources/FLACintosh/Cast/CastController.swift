@@ -170,6 +170,7 @@ final class CastController {
 
             guard self.channel === channel else { throw Failure.disconnected }
             state = .connected(device)
+            UserDefaults.standard.set(device.id, forKey: Self.lastDeviceKey)
             startPolling()
         } catch {
             if self.channel === channel { teardown() }
@@ -184,13 +185,79 @@ final class CastController {
             state = .idle
             return
         }
-        if stopReceiver, let sessionID {
-            send(namespace: CastMessage.Namespace.receiver, to: Self.receiverID, ["type": "STOP", "sessionId": sessionID])
+        if stopReceiver {
+            // The track first, then the receiver app, so the TV goes back to
+            // its own screen rather than holding a paused sleeve.
+            if let transportID, let mediaSessionID {
+                send(namespace: CastMessage.Namespace.media, to: transportID, [
+                    "type": "STOP", "mediaSessionId": mediaSessionID, "requestId": takeRequestID(),
+                ])
+            }
+            if let sessionID {
+                send(namespace: CastMessage.Namespace.receiver, to: Self.receiverID, [
+                    "type": "STOP", "sessionId": sessionID, "requestId": takeRequestID(),
+                ])
+            }
+            UserDefaults.standard.removeObject(forKey: Self.lastDeviceKey)
         }
         if let transportID {
             send(namespace: CastMessage.Namespace.connection, to: transportID, ["type": "CLOSE"])
         }
         teardown()
+    }
+
+    /// The device last cast to, until casting is stopped from here. If the
+    /// app quit while casting, the TV kept playing; this is how "This Mac"
+    /// can still find it and stop it.
+    nonisolated static let lastDeviceKey = "castLastDevice"
+
+    /// Stops what this app left playing on a device in an earlier session.
+    ///
+    /// Connects without launching anything, and stops Google's media
+    /// receiver only if it is the app running there.
+    func stopLeftoverSession() async {
+        guard !isActive,
+              let id = UserDefaults.standard.string(forKey: Self.lastDeviceKey),
+              let device = devices.first(where: { $0.id == id })
+        else { return }
+        UserDefaults.standard.removeObject(forKey: Self.lastDeviceKey)
+
+        let token = UUID()
+        channelToken = token
+        let channel = CastChannel(endpoint: device.endpoint) { [weak self] event in
+            guard let self, self.channelToken == token else { return }
+            if case .ready(let address) = event {
+                self.localAddress = address
+                self.ready?.resume()
+                self.ready = nil
+            } else if case .message(let message) = event {
+                self.receive(message)
+            }
+        }
+        self.channel = channel
+        defer {
+            if self.channel === channel {
+                channel.close()
+                self.channel = nil
+                channelToken = nil
+            }
+        }
+        do {
+            try await withTimeout(8) {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    self.ready = continuation
+                    channel.start()
+                }
+            }
+            send(namespace: CastMessage.Namespace.connection, to: Self.receiverID, ["type": "CONNECT"])
+            let status = try await request(namespace: CastMessage.Namespace.receiver, to: Self.receiverID, ["type": "GET_STATUS"], timeout: 6)
+            guard let app = Self.mediaApp(in: status), let session = app["sessionId"] as? String else { return }
+            send(namespace: CastMessage.Namespace.receiver, to: Self.receiverID, [
+                "type": "STOP", "sessionId": session, "requestId": takeRequestID(),
+            ])
+        } catch {
+            return
+        }
     }
 
     // MARK: - Media

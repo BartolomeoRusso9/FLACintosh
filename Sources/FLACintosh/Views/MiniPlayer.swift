@@ -180,12 +180,27 @@ enum TransportClock {
 // their own: read inline, the clock made the whole bar — sleeve, title,
 // every button — redraw thirty times a second, under the whole library.
 
+/// Whether the bar's clock may run. False while Now Playing covers the
+/// library: the bar is still there underneath, and redrawing its time thirty
+/// times a second where nobody can see it is work for nothing.
+struct TransportClockVisibleKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var transportClockVisible: Bool {
+        get { self[TransportClockVisibleKey.self] }
+        set { self[TransportClockVisibleKey.self] = newValue }
+    }
+}
+
 private struct MiniScrubber: View {
     let model: PlaybackModel
+    @Environment(\.transportClockVisible) private var visible
 
     var body: some View {
         Scrubber(
-            elapsed: model.displayTime,
+            elapsed: visible ? model.displayTime : 0,
             duration: model.track?.duration ?? 0,
             height: 2
         ) { model.seek(to: $0) }
@@ -194,9 +209,10 @@ private struct MiniScrubber: View {
 
 private struct MiniElapsed: View {
     let model: PlaybackModel
+    @Environment(\.transportClockVisible) private var visible
 
     var body: some View {
-        Text(TransportClock.string(model.displayTime))
+        Text(TransportClock.string(visible ? model.displayTime : 0))
             .font(.system(size: 10, design: .monospaced))
             .foregroundStyle(.secondary)
             .monospacedDigit()

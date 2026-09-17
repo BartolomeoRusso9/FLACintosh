@@ -81,9 +81,14 @@ final class CastChannel: @unchecked Sendable {
         })
     }
 
+    /// Closes once what was just sent has had time to leave. Cancelling at
+    /// once discarded the STOP sent right before it, and the TV kept playing.
     func close() {
-        queue.async { [weak self] in
+        queue.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             guard let self, !self.closed else { return }
+            self.closed = true
+            self.heartbeat?.cancel()
+            self.heartbeat = nil
             self.connection.cancel()
         }
     }

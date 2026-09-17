@@ -157,7 +157,10 @@ private struct LyricLineView: View, Equatable {
                 // Capped at 60 frames a second. On a ProMotion display the
                 // uncapped clock asked for 120, redrawing every syllable's
                 // gradient masks twice as often for motion no eye separates.
-                TimelineView(.animation(minimumInterval: 1.0 / 60, paused: !clock.isPlaying)) { _ in
+                // Thirty frames a second. Sixty looked no different on a
+                // sweep that crosses a word in a few tenths of a second, and
+                // cost twice the redrawing — the Mac ran warm for it.
+                TimelineView(.animation(minimumInterval: 1.0 / 30, paused: !clock.isPlaying)) { _ in
                     syllables(at: clock.currentTime)
                 }
             } else {
