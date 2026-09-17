@@ -61,7 +61,10 @@ for arch in $ARCHS; do
     # costs a second; a build folder per architecture would instead fetch
     # every dependency again.
     step "Building release for $arch"
-    if ! swift build -c release --product "$APP_NAME" --triple "$triple" --disable-build-manifest-caching; then
+    # SFBAudioEngine uses std::jthread/std::stop_token, which Apple's libc++
+    # only exposes with this flag (unconditionally available since Xcode 26,
+    # but the macOS 15 SDK this app targets ships with Xcode 16).
+    if ! swift build -c release --product "$APP_NAME" --triple "$triple" --disable-build-manifest-caching -Xcxx -fexperimental-library; then
         # The machine's own architecture has to build; the other one is a
         # bonus, and a failed cross build should not cost the whole package.
         if [[ "$arch" == "$native" ]]; then
