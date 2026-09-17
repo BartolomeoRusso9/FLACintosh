@@ -63,8 +63,11 @@ for arch in $ARCHS; do
     step "Building release for $arch"
     # SFBAudioEngine uses std::jthread/std::stop_token, which Apple's libc++
     # only exposes with this flag (unconditionally available since Xcode 26,
-    # but the macOS 15 SDK this app targets ships with Xcode 16).
-    if ! swift build -c release --product "$APP_NAME" --triple "$triple" --disable-build-manifest-caching -Xcxx -fexperimental-library; then
+    # but the macOS 15 SDK this app targets ships with Xcode 16). Passed as
+    # both -Xcxx and -Xcc: SFBAudioEngine's uses are in Objective-C++ (.mm)
+    # files, and which flag category SwiftPM routes those through has
+    # changed across versions, so cover both rather than depend on one.
+    if ! swift build -c release --product "$APP_NAME" --triple "$triple" --disable-build-manifest-caching -Xcxx -fexperimental-library -Xcc -fexperimental-library; then
         # The machine's own architecture has to build; the other one is a
         # bonus, and a failed cross build should not cost the whole package.
         if [[ "$arch" == "$native" ]]; then
