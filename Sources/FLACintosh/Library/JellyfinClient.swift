@@ -83,7 +83,7 @@ actor JellyfinClient: MusicServerClient {
             artist: artist,
             tracks: tracks,
             cover: try? await cover(album.Id),
-            addedAt: album.DateCreated.flatMap { ISO8601DateFormatter().date(from: $0) } ?? .distantPast,
+            addedAt: album.DateCreated.flatMap(ServerDate.parse) ?? .distantPast,
             year: album.ProductionYear.map(String.init),
             source: .server(server.id)
         )

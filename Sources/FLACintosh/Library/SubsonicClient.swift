@@ -69,7 +69,7 @@ struct SubsonicClient: MusicServerClient {
             artist: artist,
             tracks: tracks,
             cover: try? await cover(album.coverArt ?? album.id),
-            addedAt: album.created.flatMap(Self.date) ?? .distantPast,
+            addedAt: album.created.flatMap(ServerDate.parse) ?? .distantPast,
             year: album.year.map(String.init),
             source: .server(server.id)
         )
@@ -151,10 +151,6 @@ struct SubsonicClient: MusicServerClient {
             throw MusicServerError.badResponse("\(method) returned nothing usable")
         }
         return value
-    }
-
-    private static func date(_ text: String) -> Date? {
-        ISO8601DateFormatter().date(from: text)
     }
 
     // MARK: - Wire types

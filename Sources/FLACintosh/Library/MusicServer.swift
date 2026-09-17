@@ -66,6 +66,17 @@ struct ServerPlaylist: Identifiable, Hashable, Sendable {
     var source: LibrarySource
 }
 
+/// A server's timestamp. Jellyfin sends seven decimal places of seconds and
+/// Navidrome three; `ISO8601DateFormatter` accepts neither, and every album
+/// used to come back with no date — so "Recently Added" was just the albums
+/// in alphabetical order. The fraction is dropped; nothing needs it.
+enum ServerDate {
+    static func parse(_ text: String) -> Date? {
+        let whole = text.replacingOccurrences(of: #"\.\d+"#, with: "", options: .regularExpression)
+        return ISO8601DateFormatter().date(from: whole)
+    }
+}
+
 enum MusicServerError: LocalizedError {
     case badResponse(String)
     case auth
