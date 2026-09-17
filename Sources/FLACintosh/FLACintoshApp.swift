@@ -15,6 +15,10 @@ struct FLACintoshApp: App {
     @State private var route = AppRoute()
     /// Control Center, the menu bar and the media keys.
     @State private var nowPlaying = SystemNowPlaying()
+    /// What was listened to, for the Recap.
+    @State private var history = ListeningHistory()
+    /// Discord's "Listening to" status.
+    @State private var discord = DiscordPresence()
 
     init() {
         // Launched by `swift run` there is no bundle, so AppKit starts the
@@ -25,7 +29,7 @@ struct FLACintoshApp: App {
 
     var body: some Scene {
         WindowGroup(id: AppRoute.mainWindow) {
-            RootView(model: model, library: library, spotiflac: spotiflac, spotiflacServer: spotiflacServer, route: route)
+            RootView(model: model, library: library, spotiflac: spotiflac, spotiflacServer: spotiflacServer, route: route, history: history)
                 .frame(minWidth: 940, minHeight: 620)
                 .onAppear {
                     NSApp.activate(ignoringOtherApps: true)
@@ -37,6 +41,8 @@ struct FLACintoshApp: App {
                     // library cannot see until it looks again.
                     spotiflacServer.onDownloadFinished = { library.refreshAfterDownload() }
                     nowPlaying.attach(to: model)
+                    history.attach(to: model)
+                    discord.attach(to: model)
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -55,7 +61,7 @@ struct FLACintoshApp: App {
         // ⌘, — the standard home for a preference, and the cache is the one
         // setting that can quietly fill a disk.
         Settings {
-            SettingsView()
+            SettingsView(discord: discord)
         }
     }
 
@@ -88,6 +94,7 @@ struct RootView: View {
     @Bindable var spotiflac: SpotiFLACBridge
     @Bindable var spotiflacServer: SpotiFLACServer
     @Bindable var route: AppRoute
+    let history: ListeningHistory
 
     @State private var section: LibrarySection = .home
     /// What is pushed over the section: an album, an artist, a download
@@ -291,6 +298,8 @@ struct RootView: View {
             // Before the empty case: Home is where hidden sources are shown
             // again, so it has to stay reachable when nothing is visible.
             HomeView(library: library, model: model, section: $section, search: search)
+        case .recap:
+            RecapView(history: history, library: library, model: model)
         case .download:
             // Not a shelf: it is there whether or not the library is empty,
             // and it is the answer to an empty one.

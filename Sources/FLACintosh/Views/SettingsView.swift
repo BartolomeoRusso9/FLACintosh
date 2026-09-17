@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// ⌘, — currently one thing worth setting, and it is the one that can fill
-/// a disk.
+/// ⌘, — Discord, and the cache, which is the one setting that can fill a
+/// disk.
 struct SettingsView: View {
+    @Bindable var discord: DiscordPresence
+
     @State private var limited = RemoteCache.limit > 0
     @State private var gigabytes = Double(RemoteCache.limit) / 1_073_741_824
     @State private var usage: Int64 = 0
@@ -20,6 +22,40 @@ struct SettingsView: View {
 
     var body: some View {
         Form {
+            Section {
+                Toggle("Show what you're listening to", isOn: $discord.enabled)
+                TextField("Application ID", text: $discord.applicationID, prompt: Text("e.g. 1234567890123456789"))
+                    .disabled(!discord.enabled)
+                Toggle("Show album art", isOn: $discord.showArtwork)
+                    .disabled(!discord.enabled)
+                LabeledContent("Status") {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(discordConnected ? Color.green : (discord.enabled ? Color.orange : Color.secondary))
+                            .frame(width: 7, height: 7)
+                        Text(discord.status.text)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+            } header: {
+                Text("Discord")
+            } footer: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("""
+                    Create an application at discord.com/developers/applications — its \
+                    name is what Discord shows, so call it FLACintosh — and paste its \
+                    Application ID here. The Discord desktop app has to be running; \
+                    nothing is sent anywhere else. Album art is looked up on Apple \
+                    Music by artist and album, because Discord can only show a picture \
+                    with a public address.
+                    """)
+                    Link("Open the Discord Developer Portal", destination: URL(string: "https://discord.com/developers/applications")!)
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            }
+
             Section {
                 Toggle("Limit the cache", isOn: $limited)
                     .onChange(of: limited) { _, on in
@@ -91,6 +127,11 @@ struct SettingsView: View {
         .frame(width: 440)
         .fixedSize(horizontal: false, vertical: true)
         .onAppear(perform: refresh)
+    }
+
+    private var discordConnected: Bool {
+        if case .connected = discord.status { return true }
+        return false
     }
 
     private var bytes: Int64 {

@@ -77,6 +77,7 @@ struct AlbumArt: View {
                         .resizable()
                         .interpolation(.medium)
                         .aspectRatio(contentMode: .fill)
+                        .transition(.opacity)
                 } else {
                     // Sized against the square it sits in: a fixed 20pt note
                     // is right in a 26pt thumbnail and a speck in a 320pt
@@ -109,7 +110,10 @@ struct AlbumArt: View {
                     image = cached
                     return
                 }
-                image = await CoverCache.shared.load(id: cacheKey, data: data, maxPixel: bucket)
+                let loaded = await CoverCache.shared.load(id: cacheKey, data: data, maxPixel: bucket)
+                // Decoded just now: faded in rather than popped. A cover
+                // already in the cache appears at once, above.
+                withAnimation(.easeOut(duration: 0.22)) { image = loaded }
             }
     }
 

@@ -43,6 +43,7 @@ struct MiniPlayer: View {
             Button { model.isShuffling.toggle() } label: {
                 Image(systemName: "shuffle")
                     .foregroundStyle(model.isShuffling ? Palette.red : .secondary)
+                    .symbolEffect(.bounce, value: model.isShuffling)
             }
             .help("Shuffle")
 
@@ -53,6 +54,7 @@ struct MiniPlayer: View {
                 Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
                     .font(.system(size: 18))
                     .frame(width: 20)
+                    .contentTransition(.symbolEffect(.replace.downUp))
             }
             Button { model.advance(by: 1) } label: {
                 Image(systemName: "forward.fill")
@@ -61,6 +63,7 @@ struct MiniPlayer: View {
             Button { model.repeatMode = model.repeatMode.next } label: {
                 Image(systemName: model.repeatMode.symbol)
                     .foregroundStyle(model.repeatMode == .off ? .secondary : Palette.red)
+                    .contentTransition(.symbolEffect(.replace))
             }
             .help("Repeat")
         }

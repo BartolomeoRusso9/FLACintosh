@@ -1,7 +1,5 @@
 # FLACintosh
 
-> **The name is a placeholder.** Working title until we pick a real one.
-
 A macOS music player for local files, built around the one thing no other
 player on the platform does: **word-by-word synchronised lyrics.**
 
@@ -26,9 +24,10 @@ writes it with `--save-lrc`. What is missing is something to draw it.
 
 ## Status
 
-**Step 4 of 5.** Reads a folder — or a Navidrome or Jellyfin server — into a
-library, shows it the way a music app should, plays it with lyrics one
-syllable at a time, and goes and finds those lyrics when a file has none.
+**Feature complete.** Reads a folder — or a Navidrome or Jellyfin server —
+into a library, shows it the way a music app should, plays it with lyrics one
+syllable at a time, goes and finds those lyrics when a file has none, and
+plays on Cast devices, shows up on Discord and sums up what you listened to.
 
 - [x] Playback, metadata, real sample rate / bit depth
 - [x] Enhanced-LRC parser with per-syllable timing
@@ -41,11 +40,11 @@ syllable at a time, and goes and finds those lyrics when a file has none.
 - [x] Search Spotify and download through a SpotiFLAC server
 - [x] Navidrome / Subsonic and Jellyfin servers
 - [x] Metadata editor
-- [ ] Discord Rich Presence
+- [x] Discord Rich Presence
 - [x] `MPNowPlayingInfoCenter` + media keys: Control Center, menu bar, keyboard
 - [x] Google Cast: Chromecast, Google TV, Nest speakers and groups — unsupported formats and hi-res converted on the fly
-- [ ] Wrapped-style listening summary
-- [ ] Animation polish
+- [x] Wrapped-style listening summary: the Recap
+- [x] Animation polish
 
 ## Running it
 
@@ -129,6 +128,44 @@ depend on a `pip install`.
 ```bash
 swift run LyricsCheck --fetch "Title" "Artist" [album] [duration]
 ```
+
+## Recap
+
+**Recap**, in the sidebar, is a Wrapped-style summary of what you played in
+FLACintosh — for the last 30 days, this year or all time: minutes listened,
+top songs, artists and albums, when in the day you listen, your longest
+streak of days and your biggest one.
+
+A play counts the way Last.fm counts a scrobble: half the song, or four
+minutes of a long one, and never a track under thirty seconds. Only time
+actually heard is added. The history is one JSON line per play in
+`~/Library/Application Support/FLACintosh/listening-history.jsonl`, never
+sent anywhere, and can be cleared from the bottom of the Recap.
+
+## Discord
+
+Settings (⌘,) → **Discord** shows the song on your Discord profile as
+"Listening to", with the artist, album, a progress bar and the cover.
+
+Discord only shows Rich Presence for an application registered with it, and
+the application's name is what appears. Create one at
+[discord.com/developers/applications](https://discord.com/developers/applications),
+call it FLACintosh, and paste its **Application ID** in Settings. The Discord
+desktop app has to be running: presence goes over its local socket, not the
+internet. Covers are looked up on Apple Music by artist and album — Discord
+can only show a picture with a public address — and only one whose artist
+matches is used.
+
+## Google Cast
+
+The Cast button next to AirPlay plays on any Google Cast receiver on the
+network: Chromecast, TVs with Google TV, Nest speakers, speaker groups.
+Server tracks the receiver can decode go to it straight from the server, so
+they keep playing with the Mac asleep. Local files are served from the Mac,
+and what a receiver cannot play — ALAC, AIFF, APE, WavPack, DSD, anything over
+96 kHz / 24 bit — is converted to FLAC first. The first time, macOS asks
+whether FLACintosh may accept incoming connections: that is the receiver
+fetching the music.
 
 ## Servers
 

@@ -7,6 +7,7 @@ enum LibrarySection: Identifiable, Hashable {
     case home
     case recentlyAdded, artists, albums, songs
     case download
+    case recap
 
     var id: String {
         switch self {
@@ -16,6 +17,7 @@ enum LibrarySection: Identifiable, Hashable {
         case .albums: "albums"
         case .songs: "songs"
         case .download: "download"
+        case .recap: "recap"
         }
     }
 
@@ -30,6 +32,7 @@ enum LibrarySection: Identifiable, Hashable {
         case .albums: "Albums"
         case .songs: "Songs"
         case .download: "Download"
+        case .recap: "Recap"
         }
     }
 
@@ -41,6 +44,7 @@ enum LibrarySection: Identifiable, Hashable {
         case .albums: "square.stack"
         case .songs: "music.note"
         case .download: "arrow.down.circle"
+        case .recap: "chart.bar.xaxis"
         }
     }
 }
@@ -57,6 +61,10 @@ struct Sidebar: View {
                 ForEach(LibrarySection.shelves) { section in
                     row(section)
                 }
+            }
+
+            Section("Listening") {
+                row(.recap)
             }
 
             Section("Get More") {
@@ -236,7 +244,10 @@ struct AlbumTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             AlbumArt(id: album.id, data: album.cover)
-                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
+                .shadow(color: .black.opacity(hovering ? 0.28 : 0.18), radius: hovering ? 12 : 8, y: hovering ? 6 : 3)
+                // Lifted a couple of points, not scaled: a scaled sleeve
+                // spills over its neighbours in a tight grid.
+                .offset(y: hovering ? -2 : 0)
                 .overlay(alignment: .bottomLeading) {
                     if hovering {
                         Button(action: onPlay) {
@@ -249,6 +260,7 @@ struct AlbumTile: View {
                         }
                         .buttonStyle(.plain)
                         .padding(10)
+                        .transition(.scale(scale: 0.6).combined(with: .opacity))
                     }
                 }
                 .overlay(alignment: .topTrailing) {

@@ -24,6 +24,7 @@ struct NowPlayingView: View {
     private enum Panel { case lyrics, queue }
 
     @State private var panel: Panel = .lyrics
+    @Namespace private var panelSwitchSpace
 
     var body: some View {
         ZStack {
@@ -77,11 +78,19 @@ struct NowPlayingView: View {
             VStack(alignment: .leading, spacing: 0) {
                 sleeve
                     .frame(width: side, height: side)
+                    // Apple Music's pause: the sleeve settles back a little
+                    // and its shadow tightens, and springs forward on play.
+                    .scaleEffect(model.isPlaying || model.track == nil ? 1 : 0.88)
+                    .shadow(
+                        color: .black.opacity(model.isPlaying ? 0.35 : 0.22),
+                        radius: model.isPlaying ? 22 : 12,
+                        y: model.isPlaying ? 12 : 6
+                    )
+                    .animation(.spring(response: 0.45, dampingFraction: 0.72), value: model.isPlaying)
                     // Centred on the column: the sleeve and the progress bar
                     // under it are the same record seen twice, so they share
                     // an axis.
                     .frame(maxWidth: .infinity)
-                    .shadow(color: .black.opacity(0.35), radius: 22, y: 12)
 
                 Spacer(minLength: 24)
 
@@ -130,6 +139,8 @@ struct NowPlayingView: View {
                 .font(.system(size: 21, weight: .bold))
                 .foregroundStyle(Palette.white)
                 .lineLimit(2)
+                .contentTransition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: model.track?.title)
 
             // Artist and record as two links, the way Apple Music's are:
             // each opens its page in the library.
@@ -206,6 +217,7 @@ struct NowPlayingView: View {
             Button { model.isShuffling.toggle() } label: {
                 Image(systemName: "shuffle")
                     .foregroundStyle(model.isShuffling ? Palette.pink : Palette.white.opacity(0.6))
+                    .symbolEffect(.bounce, value: model.isShuffling)
             }
 
             Spacer(minLength: 20)
@@ -216,6 +228,7 @@ struct NowPlayingView: View {
                     Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 26))
                         .frame(width: 32)
+                        .contentTransition(.symbolEffect(.replace.downUp))
                 }
                 Button { model.advance(by: 1) } label: { Image(systemName: "forward.fill") }
             }
@@ -225,6 +238,7 @@ struct NowPlayingView: View {
             Button { model.repeatMode = model.repeatMode.next } label: {
                 Image(systemName: model.repeatMode.symbol)
                     .foregroundStyle(model.repeatMode == .off ? Palette.white.opacity(0.6) : Palette.pink)
+                    .contentTransition(.symbolEffect(.replace))
             }
         }
         .frame(maxWidth: .infinity)
@@ -409,11 +423,21 @@ struct NowPlayingView: View {
 
     private func panelButton(_ which: Panel, symbol: String, help: String) -> some View {
         let isOn = panel == which
-        return Button { panel = which } label: {
+        return Button {
+            withAnimation(.snappy(duration: 0.25)) { panel = which }
+        } label: {
             Image(systemName: symbol)
                 .foregroundStyle(isOn ? Palette.white : Palette.white.opacity(0.6))
                 .frame(width: 34, height: 28)
-                .background(isOn ? Palette.white.opacity(0.22) : .clear, in: Capsule())
+                .background {
+                    // One highlight that slides between the two, rather than
+                    // two that blink.
+                    if isOn {
+                        Capsule()
+                            .fill(Palette.white.opacity(0.22))
+                            .matchedGeometryEffect(id: "panelHighlight", in: panelSwitchSpace)
+                    }
+                }
         }
         .help(help)
     }
