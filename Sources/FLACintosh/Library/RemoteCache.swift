@@ -290,7 +290,7 @@ enum RemoteCache {
 
     /// The extension matters: the decoder is chosen from it, and a FLAC
     /// saved as `.mp3` will not open.
-    private static func fileExtension(for response: HTTPURLResponse, url: URL) -> String {
+    static func fileExtension(for response: HTTPURLResponse, url: URL) -> String {
         let type = (response.value(forHTTPHeaderField: "Content-Type") ?? "")
             .split(separator: ";").first.map(String.init)?
             .trimmingCharacters(in: .whitespaces)
@@ -325,7 +325,7 @@ enum RemoteCache {
     /// salt every time a URL is built — so hashing them named the same track
     /// differently on every launch, and nothing in the cache was ever found
     /// again. Server, path and the `id` parameter are what stay put.
-    private static func fingerprint(_ url: URL) -> String {
+    static func fingerprint(_ url: URL) -> String {
         var identity = url.absoluteString
         if var components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
             components.queryItems = components.queryItems?.filter { $0.name == "id" }

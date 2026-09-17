@@ -120,6 +120,35 @@ receiver lacks is converted to FLAC with SFBAudioEngine first and cached in
 `~/Library/Caches/macos-music-player/cast` (1 GB cap). If a receiver refuses
 a direct URL, the same track is retried through the Mac.
 
+## Sound
+
+`Audio/AudioEffects.swift` holds the settings and both implementations. Local
+files play through SFBAudioEngine, whose graph gets an `AVAudioUnitEQ`
+between the source node and the main mixer (`DeckEffects`, which is also the
+player's delegate: it reconnects the EQ on format changes and reports when an
+enqueued file starts, which is how gapless advances the queue). Server
+streams play through AVPlayer, so the same curve — RBJ peaking biquads, one
+octave wide — runs in an `MTAudioProcessingTap` (`StreamEffects`). ReplayGain
+and the equalizer's headroom are the EQ's global gain on one path and a
+multiply on the other.
+
+Gapless enqueues the next playable file (local, or a downloaded copy of a
+server track) on the live deck with `AudioPlayer.enqueue`.
+
+## Playlists, downloads and scrobbling
+
+Track identity across launches is `LibraryTrack.key`: a file's path, or a
+server URL's fingerprint without credentials (Subsonic builds a new salt for
+every URL, Jellyfin a new token per login). Anything written to disk uses
+`LibraryTrack.storable(_:)`, which drops the credentials.
+
+- `PlaylistStore` — `~/Library/Application Support/FLACintosh/playlists.json`;
+  server playlists come from `MusicServerClient.playlists()`.
+- `OfflineStore` — `…/FLACintosh/Offline/`, a manifest plus one file per
+  track; `PlaybackModel.localCopy` prefers it over the stream.
+- `Scrobbler` — fed by `ListeningHistory.onPlay`; unsent scrobbles in
+  `…/FLACintosh/scrobble-queue.json`, secrets in the Keychain.
+
 ## Discord and the Recap
 
 Discord Rich Presence goes over Discord's local IPC socket

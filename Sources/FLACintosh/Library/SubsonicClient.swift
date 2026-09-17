@@ -93,6 +93,21 @@ struct SubsonicClient: MusicServerClient {
         let _: Empty = try await get("ping", [:]) { _ in Empty() }
     }
 
+    func playlists() async throws -> [ServerPlaylist] {
+        let listed: PlaylistList = try await get("getPlaylists", [:]) { $0.playlists }
+        var found: [ServerPlaylist] = []
+        for playlist in listed.playlist ?? [] {
+            let detail: PlaylistWithSongs = try await get("getPlaylist", ["id": playlist.id]) { $0.playlist }
+            found.append(ServerPlaylist(
+                id: "\(server.id.uuidString)/\(playlist.id)",
+                name: playlist.name ?? "Playlist",
+                trackURLs: (detail.entry ?? []).compactMap { streamURL(for: $0.id) },
+                source: .server(server.id)
+            ))
+        }
+        return found
+    }
+
     // MARK: - Requests
 
     private func url(_ method: String, _ parameters: [String: String]) -> URL? {
@@ -158,6 +173,21 @@ struct SubsonicClient: MusicServerClient {
         var error: APIError?
         var albumList2: AlbumList?
         var album: AlbumWithSongs?
+        var playlists: PlaylistList?
+        var playlist: PlaylistWithSongs?
+    }
+
+    struct PlaylistList: Decodable {
+        var playlist: [Playlist]?
+    }
+
+    struct Playlist: Decodable {
+        var id: String
+        var name: String?
+    }
+
+    struct PlaylistWithSongs: Decodable {
+        var entry: [Song]?
     }
 
     struct APIError: Decodable {

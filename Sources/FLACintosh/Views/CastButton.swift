@@ -21,9 +21,17 @@ struct CastButton: View {
         .buttonStyle(.plain)
         .help(cast.activeDevice.map { "Casting to \($0.name)" } ?? "Google Cast")
         .popover(isPresented: $showing, arrowEdge: .top) {
+            // The popover is drawn in the system's appearance, not the one
+            // Now Playing sets for itself: inheriting its dark scheme put
+            // white text on a light popover.
             CastPicker(model: model) { showing = false }
+                .environment(\.colorScheme, Self.systemScheme)
         }
         .onAppear { model.wireCast() }
+    }
+
+    private static var systemScheme: ColorScheme {
+        NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .dark : .light
     }
 
     private var isConnecting: Bool {

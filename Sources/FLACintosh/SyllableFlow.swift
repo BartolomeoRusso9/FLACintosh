@@ -19,7 +19,13 @@ struct SyllableFlow: Layout {
         Cache(sizes: subviews.map { $0.sizeThatFits(.unspecified) })
     }
 
+    /// Called on every frame of the sweep, because the active line's views
+    /// are rebuilt for each one. Their text is the same, so their sizes are
+    /// too: measured again only when the pieces themselves change. Measuring
+    /// thirty-point text for every syllable sixty times a second was a
+    /// steady load on the Mac for nothing.
     func updateCache(_ cache: inout Cache, subviews: Subviews) {
+        guard cache.sizes.count != subviews.count else { return }
         cache.sizes = subviews.map { $0.sizeThatFits(.unspecified) }
     }
 

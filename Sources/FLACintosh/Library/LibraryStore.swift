@@ -21,6 +21,8 @@ final class LibraryStore {
     struct SourceState {
         var albums: [LibraryAlbum] = []
         var tracks: [LibraryTrack] = []
+        /// The server's own playlists; none for the folder.
+        var playlists: [ServerPlaylist] = []
         /// Folder thumbnails, keyed by album id. Servers hand covers over
         /// already attached to their albums.
         var covers: [String: Data] = [:]
@@ -43,6 +45,15 @@ final class LibraryStore {
     /// with a thousand albums would be a sort per frame.
     private(set) var albums: [LibraryAlbum] = []
     private(set) var tracks: [LibraryTrack] = []
+    /// Playlists from the visible servers.
+    private(set) var serverPlaylists: [ServerPlaylist] = []
+    /// Every visible track by its stable key, for turning a playlist's list
+    /// of URLs back into tracks.
+    private(set) var tracksByKey: [String: LibraryTrack] = [:]
+
+    func track(for url: URL) -> LibraryTrack? {
+        tracksByKey[LibraryTrack.key(for: url)]
+    }
 
     private(set) var root: URL
     private(set) var servers: [MusicServer] = []
@@ -185,6 +196,8 @@ final class LibraryStore {
         albums = visible.flatMap { states[$0]?.albums ?? [] }
             .sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
         tracks = visible.flatMap { states[$0]?.tracks ?? [] }
+        serverPlaylists = visible.flatMap { states[$0]?.playlists ?? [] }
+        tracksByKey = Dictionary(tracks.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     // MARK: - Lyrics
@@ -445,12 +458,16 @@ final class LibraryStore {
                 )
             case .success(let password):
                 do {
-                    let found = try await Self.client(for: server, password: password)
-                        .albums(progress: report)
+                    let client = Self.client(for: server, password: password)
+                    let found = try await client.albums(progress: report)
+                    // A server without playlists, or one refusing to list
+                    // them, still has a library.
+                    let playlists = (try? await client.playlists()) ?? []
                     guard !Task.isCancelled else { return }
                     states[source] = SourceState(
                         albums: found,
                         tracks: found.flatMap(\.tracks),
+                        playlists: playlists,
                         progress: (found.count, found.count),
                         hasLoaded: true
                     )

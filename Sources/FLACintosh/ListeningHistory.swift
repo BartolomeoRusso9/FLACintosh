@@ -32,6 +32,9 @@ final class ListeningHistory {
     private(set) var plays: [Play] = []
 
     @ObservationIgnored private weak var model: PlaybackModel?
+    /// Told about every play as it is recorded — the scrobbler listens here,
+    /// so a scrobble follows exactly the same rule as the Recap.
+    @ObservationIgnored var onPlay: [(Play) -> Void] = []
     @ObservationIgnored private var clock: Task<Void, Never>?
     @ObservationIgnored private var loaded = false
 
@@ -146,10 +149,11 @@ final class ListeningHistory {
             albumArtist: snapshot.albumArtist,
             album: snapshot.album,
             duration: snapshot.duration,
-            url: url.absoluteString
+            url: LibraryTrack.storable(url)
         )
         plays.append(play)
         append(play)
+        onPlay.forEach { $0(play) }
     }
 
     private func append(_ play: Play) {

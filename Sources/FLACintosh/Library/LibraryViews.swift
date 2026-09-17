@@ -8,6 +8,8 @@ enum LibrarySection: Identifiable, Hashable {
     case recentlyAdded, artists, albums, songs
     case download
     case recap
+    case downloaded
+    case playlist(PlaylistStore.Reference)
 
     var id: String {
         switch self {
@@ -18,6 +20,9 @@ enum LibrarySection: Identifiable, Hashable {
         case .songs: "songs"
         case .download: "download"
         case .recap: "recap"
+        case .downloaded: "downloaded"
+        case .playlist(.local(let id)): "playlist-\(id.uuidString)"
+        case .playlist(.server(let id)): "playlist-\(id)"
         }
     }
 
@@ -33,6 +38,8 @@ enum LibrarySection: Identifiable, Hashable {
         case .songs: "Songs"
         case .download: "Download"
         case .recap: "Recap"
+        case .downloaded: "Downloaded"
+        case .playlist: "Playlist"
         }
     }
 
@@ -45,6 +52,9 @@ enum LibrarySection: Identifiable, Hashable {
         case .songs: "music.note"
         case .download: "arrow.down.circle"
         case .recap: "chart.bar.xaxis"
+        case .downloaded: "arrow.down.circle.fill"
+        case .playlist(.local): "music.note.list"
+        case .playlist(.server): "music.note.list"
         }
     }
 }
@@ -55,11 +65,38 @@ struct Sidebar: View {
     let onChooseFolder: () -> Void
     let onAddServer: () -> Void
 
+    @Environment(PlaylistStore.self) private var playlists: PlaylistStore?
+    @Environment(OfflineStore.self) private var offline: OfflineStore?
+
     var body: some View {
         List {
             Section("Library") {
                 ForEach(LibrarySection.shelves) { section in
                     row(section)
+                }
+            }
+
+            if let offline, offline.albumCount > 0 || !offline.progress.isEmpty {
+                Section("On This Mac") {
+                    row(.downloaded)
+                }
+            }
+
+            Section("Playlists") {
+                if let playlists {
+                    ForEach(playlists.playlists) { playlist in
+                        row(.playlist(.local(playlist.id)), title: playlist.name)
+                    }
+                }
+                ForEach(library.serverPlaylists) { playlist in
+                    row(.playlist(.server(playlist.id)), title: playlist.name, symbol: library.symbol(of: playlist.source))
+                        .help("On \(library.name(of: playlist.source))")
+                }
+                if let playlists {
+                    action("New Playlist", symbol: "plus") {
+                        let created = playlists.create()
+                        selection = .playlist(.local(created.id))
+                    }
                 }
             }
 
@@ -297,6 +334,8 @@ struct AlbumDetail: View {
     let model: PlaybackModel
     let library: LibraryStore
 
+    @Environment(OfflineStore.self) private var offline: OfflineStore?
+
     @State private var editing: LibraryTrack?
     /// The sleeve's own main colour, darkened to sit behind text — the band
     /// the page opens with. Read from the cover, not stored with the album:
@@ -390,17 +429,75 @@ struct AlbumDetail: View {
                         Label("Shuffle", systemImage: "shuffle")
                             .frame(width: 86)
                     }
+                    Menu {
+                        AddToPlaylistMenu(tracks: album.tracks, suggestedName: album.title)
+                        if let offline, album.source != .folder {
+                            Divider()
+                            if offline.isDownloading(album) {
+                                Button("Stop Downloading") { offline.cancel(album) }
+                            } else if offline.isDownloaded(album) {
+                                Button("Remove Download", role: .destructive) { offline.remove(album) }
+                            } else {
+                                Button("Download") { offline.download(album) }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                    }
+                    .menuIndicator(.hidden)
+                    .fixedSize()
+                    .help("More")
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(Palette.red)
                 .controlSize(.large)
                 .padding(.top, 10)
 
+                downloadStatus
+
                 if album.lyricCount < album.tracks.count {
                     lyricsHunt
                 }
             }
             Spacer(minLength: 0)
+        }
+    }
+
+    /// Download progress, or that the album is on this Mac — server albums
+    /// only.
+    @ViewBuilder
+    private var downloadStatus: some View {
+        if let offline, album.source != .folder {
+            if let progress = offline.progress[album.id] {
+                HStack(spacing: 8) {
+                    ProgressView(value: Double(progress.done), total: Double(max(progress.total, 1)))
+                        .frame(width: 120)
+                        .tint(Palette.red)
+                    Text("Downloading \(min(progress.done + 1, progress.total)) of \(progress.total)")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Button("Stop") { offline.cancel(album) }
+                        .buttonStyle(.plain)
+                        .font(.system(size: 11))
+                        .foregroundStyle(Palette.red)
+                }
+                .padding(.top, 6)
+            } else if offline.isDownloaded(album) {
+                Label("Downloaded — plays without the server", systemImage: "arrow.down.circle.fill")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 6)
+            } else {
+                Button {
+                    offline.download(album)
+                } label: {
+                    Label("Download for offline listening", systemImage: "arrow.down.circle")
+                        .font(.system(size: 12))
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(Palette.red)
+                .padding(.top, 6)
+            }
         }
     }
 
@@ -571,6 +668,8 @@ struct TrackRow: View {
     let onPlay: () -> Void
     var onFindLyrics: (() -> Void)?
     var onEdit: (() -> Void)?
+    /// Only on a playlist's own page.
+    var onRemoveFromPlaylist: (() -> Void)?
 
     @State private var hovering = false
 
@@ -632,6 +731,11 @@ struct TrackRow: View {
         .onTapGesture(perform: onPlay)
         .contextMenu {
             Button("Play", action: onPlay)
+            AddToPlaylistMenu(tracks: [track])
+            if let onRemoveFromPlaylist {
+                Button("Remove from Playlist", role: .destructive, action: onRemoveFromPlaylist)
+            }
+            Divider()
             if !track.hasLyrics, let onFindLyrics {
                 Button("Find Lyrics", action: onFindLyrics)
             }

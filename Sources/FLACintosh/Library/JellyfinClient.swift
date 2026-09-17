@@ -130,6 +130,30 @@ actor JellyfinClient: MusicServerClient {
         _ = try await authenticate()
     }
 
+    func playlists() async throws -> [ServerPlaylist] {
+        let user = try await authenticate()
+        let listed: ItemsResponse = try await get("Items", [
+            "userId": user,
+            "IncludeItemTypes": "Playlist",
+            "Recursive": "true",
+            "Fields": "MediaType",
+        ])
+        var found: [ServerPlaylist] = []
+        // Video playlists live in the same list; only music is wanted.
+        for playlist in (listed.Items ?? []) where playlist.MediaType == nil || playlist.MediaType == "Audio" {
+            let items: ItemsResponse = try await get("Playlists/\(playlist.Id)/Items", ["userId": user])
+            let urls = (items.Items ?? []).compactMap { streamURL(for: $0.Id) }
+            guard !urls.isEmpty else { continue }
+            found.append(ServerPlaylist(
+                id: "\(server.id.uuidString)/\(playlist.Id)",
+                name: playlist.Name ?? "Playlist",
+                trackURLs: urls,
+                source: .server(server.id)
+            ))
+        }
+        return found
+    }
+
     /// Asks Jellyfin to look for new files now rather than at its next
     /// scheduled scan — after a download, so the record shows up in minutes
     /// instead of hours. Only an administrator may; anyone else is refused,
@@ -255,6 +279,7 @@ actor JellyfinClient: MusicServerClient {
         var IndexNumber: Int?
         var ParentIndexNumber: Int?
         var RunTimeTicks: Int?
+        var MediaType: String?
     }
 }
 

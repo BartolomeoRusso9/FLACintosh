@@ -51,6 +51,19 @@ protocol MusicServerClient: Sendable {
     func cover(_ albumID: String) async throws -> Data?
     /// Where to fetch a track's audio.
     func streamURL(for trackID: String) -> URL?
+    /// The playlists kept on the server, each as the stream URLs of its
+    /// songs — the same URLs the albums' tracks carry, so they resolve to
+    /// tracks already in the library.
+    func playlists() async throws -> [ServerPlaylist]
+}
+
+/// A playlist as a server keeps it.
+struct ServerPlaylist: Identifiable, Hashable, Sendable {
+    /// Unique across servers: the server's id and the playlist's own.
+    var id: String
+    var name: String
+    var trackURLs: [URL]
+    var source: LibrarySource
 }
 
 enum MusicServerError: LocalizedError {

@@ -19,6 +19,11 @@ struct FLACintoshApp: App {
     @State private var history = ListeningHistory()
     /// Discord's "Listening to" status.
     @State private var discord = DiscordPresence()
+    @State private var playlists = PlaylistStore()
+    @State private var offline = OfflineStore()
+    @State private var effects = AudioEffects()
+    @State private var scrobbler = Scrobbler()
+    @AppStorage("showMenuBarPlayer") private var showMenuBarPlayer = true
 
     init() {
         // Launched by `swift run` there is no bundle, so AppKit starts the
@@ -30,6 +35,8 @@ struct FLACintoshApp: App {
     var body: some Scene {
         WindowGroup(id: AppRoute.mainWindow) {
             RootView(model: model, library: library, spotiflac: spotiflac, spotiflacServer: spotiflacServer, route: route, history: history)
+                .environment(playlists)
+                .environment(offline)
                 .frame(minWidth: 940, minHeight: 620)
                 .onAppear {
                     NSApp.activate(ignoringOtherApps: true)
@@ -43,6 +50,9 @@ struct FLACintoshApp: App {
                     nowPlaying.attach(to: model)
                     history.attach(to: model)
                     discord.attach(to: model)
+                    model.attachEffects(effects)
+                    scrobbler.attach(to: model, history: history)
+                    model.localCopy = { [offline] url in offline.localFile(for: url) }
                 }
         }
         .windowStyle(.hiddenTitleBar)
@@ -56,12 +66,45 @@ struct FLACintoshApp: App {
                 Button("Rescan Library") { library.reload() }
                     .keyboardShortcut("r")
             }
+            CommandMenu("Controls") {
+                Button(model.isPlaying ? "Pause" : "Play") { model.togglePlayPause() }
+                    .keyboardShortcut(.return, modifiers: [.command])
+                    .disabled(model.track == nil)
+                Button("Next") { model.advance(by: 1) }
+                    .keyboardShortcut(.rightArrow, modifiers: [.command])
+                Button("Previous") { model.previous() }
+                    .keyboardShortcut(.leftArrow, modifiers: [.command])
+                Divider()
+                Button("Volume Up") { model.volume = min(1, model.volume + 0.1) }
+                    .keyboardShortcut(.upArrow, modifiers: [.command])
+                Button("Volume Down") { model.volume = max(0, model.volume - 0.1) }
+                    .keyboardShortcut(.downArrow, modifiers: [.command])
+                Divider()
+                Toggle("Shuffle", isOn: $model.isShuffling)
+                Button("Repeat: \(model.repeatMode == .off ? "Off" : model.repeatMode == .all ? "All" : "One")") {
+                    model.repeatMode = model.repeatMode.next
+                }
+                Divider()
+                EqualizerMenuItem()
+            }
         }
+
+        // The equalizer, in a window of its own: it is adjusted while
+        // listening, not set once and forgotten like a preference.
+        Window("Equalizer", id: "equalizer") {
+            EqualizerView(effects: effects)
+        }
+        .windowResizability(.contentSize)
+
+        MenuBarExtra("FLACintosh", systemImage: model.isPlaying ? "music.note" : "music.note.list", isInserted: $showMenuBarPlayer) {
+            MenuBarPlayer(model: model)
+        }
+        .menuBarExtraStyle(.window)
 
         // ⌘, — the standard home for a preference, and the cache is the one
         // setting that can quietly fill a disk.
         Settings {
-            SettingsView(discord: discord)
+            SettingsView(discord: discord, effects: effects, scrobbler: scrobbler, offline: offline)
         }
     }
 
@@ -95,6 +138,7 @@ struct RootView: View {
     @Bindable var spotiflacServer: SpotiFLACServer
     @Bindable var route: AppRoute
     let history: ListeningHistory
+    @Environment(OfflineStore.self) private var offline
 
     @State private var section: LibrarySection = .home
     /// What is pushed over the section: an album, an artist, a download
@@ -300,6 +344,16 @@ struct RootView: View {
             HomeView(library: library, model: model, section: $section, search: search)
         case .recap:
             RecapView(history: history, library: library, model: model)
+        case .playlist(let reference):
+            PlaylistDetail(reference: reference, model: model, library: library) {
+                section = .home
+            }
+            .id(section)
+        case .downloaded:
+            AlbumGrid(albums: offline.albums) { album in
+                model.play(album.tracks, startingAt: 0)
+            }
+            .navigationTitle("Downloaded")
         case .download:
             // Not a shelf: it is there whether or not the library is empty,
             // and it is the answer to an empty one.
@@ -423,5 +477,15 @@ struct RootView: View {
         if panel.runModal() == .OK, let url = panel.url {
             library.setRoot(url)
         }
+    }
+}
+
+/// "Equalizer…" in the Controls menu, opening its window.
+private struct EqualizerMenuItem: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button("Equalizer…") { openWindow(id: "equalizer") }
+            .keyboardShortcut("e", modifiers: [.command, .option])
     }
 }

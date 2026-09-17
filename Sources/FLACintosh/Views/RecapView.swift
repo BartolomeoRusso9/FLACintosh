@@ -291,7 +291,7 @@ struct RecapView: View {
 
     private func play(_ song: ListeningRecap.Ranked) {
         let sample = song.sample
-        if let track = library.songs.first(where: { $0.url.absoluteString == sample.url })
+        if let track = URL(string: sample.url).flatMap(library.track(for:))
             ?? library.songs.first(where: { $0.title == sample.title && $0.artist == sample.artist }) {
             model.play([track], startingAt: 0)
         } else if let url = URL(string: sample.url), url.isFileURL, FileManager.default.fileExists(atPath: url.path) {

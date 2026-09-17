@@ -24,6 +24,7 @@ struct NowPlayingView: View {
     private enum Panel { case lyrics, queue }
 
     @State private var panel: Panel = .lyrics
+    @Environment(PlaylistStore.self) private var playlists: PlaylistStore?
     @Namespace private var panelSwitchSpace
 
     var body: some View {
@@ -342,6 +343,16 @@ struct NowPlayingView: View {
 
                 Spacer()
 
+                if let playlists, !model.queue.isEmpty {
+                    Button("Save as Playlist") {
+                        playlists.create(with: model.queue)
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13))
+                    .foregroundStyle(Palette.red)
+                    .help("Make a playlist of everything in the queue")
+                }
+
                 Button("Clear") { model.clearQueue() }
                     .buttonStyle(.plain)
                     .font(.system(size: 13))
@@ -395,6 +406,7 @@ struct NowPlayingView: View {
                 .frame(width: 22, height: 18)
                 .help("AirPlay")
             CastButton(model: model, tint: Palette.white.opacity(0.85), activeTint: Palette.pink, size: 15)
+            EqualizerButton()
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 6)
@@ -518,5 +530,20 @@ private struct TitleLink: View {
         } else {
             Text(text)
         }
+    }
+}
+
+/// Opens the equalizer from the volume capsule.
+private struct EqualizerButton: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Button { openWindow(id: "equalizer") } label: {
+            Image(systemName: "slider.vertical.3")
+                .font(.system(size: 13))
+                .foregroundStyle(Palette.white.opacity(0.85))
+        }
+        .buttonStyle(.plain)
+        .help("Equalizer")
     }
 }

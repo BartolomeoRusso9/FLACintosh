@@ -144,16 +144,10 @@ private struct LyricLineView: View, Equatable {
     private var dimming: Double {
         guard let distance else { return 0.4 }
         if distance == 0 { return 1 }
-        if distance < 0 { return 0.34 }
-        return max(0.2, 0.6 - Double(distance) * 0.09)
+        if distance < 0 { return 0.32 }
+        return max(0.16, 0.55 - Double(distance) * 0.1)
     }
 
-    private var blur: Double {
-        guard let distance, distance != 0 else { return 0 }
-        // Enough to push a line back, not so much that it stops being words.
-        // The first pass blurred three lines out into fog.
-        return min(1.5, Double(abs(distance)) * 0.42)
-    }
 
     var body: some View {
         Group {
@@ -172,7 +166,10 @@ private struct LyricLineView: View, Equatable {
         }
         .font(.system(size: 30, weight: .bold, design: .rounded))
         .opacity(dimming)
-        .blur(radius: blur)
+        // No blur on the lines around the current one. It looked right, but
+        // a blur is a filter the GPU recomputes on every frame the window is
+        // redrawn — and the sung line redraws it sixty times a second, so the
+        // Mac ran hot for an effect dimming already gives most of.
         .scaleEffect(isActive ? 1 : 0.94, anchor: .leading)
         .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isActive)
     }
@@ -263,6 +260,23 @@ private struct SyllableText: View {
     }
 
     var body: some View {
+        // Only the syllable being sung needs its masks. One not reached yet
+        // or already sung is a single plain Text — three layers with gradient
+        // masks for every syllable of the line, every frame, is what the
+        // sweep used to cost.
+        if progress <= 0 {
+            Text(syllable.text)
+                .foregroundStyle(Palette.lyricPending)
+                .animation(.spring(response: 0.32, dampingFraction: 0.62), value: progress > 0)
+        } else if progress >= 1 {
+            Text(syllable.text)
+                .foregroundStyle(Palette.white)
+        } else {
+            sweeping
+        }
+    }
+
+    private var sweeping: some View {
         Text(syllable.text)
             .foregroundStyle(Palette.lyricPending)
             // What has been sung: white, crisp, the thing you actually read.

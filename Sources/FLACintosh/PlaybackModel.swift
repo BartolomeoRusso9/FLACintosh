@@ -75,7 +75,7 @@ final class PlaybackModel {
     /// beside the audio with `--save-canvas`, same name, video extension.
     /// Local files only — a server does not hand over the files next to a
     /// track, only the track.
-    private(set) var canvas: URL?
+    var canvas: URL?
 
     /// What SpotiFLAC writes (`core/canvas.py`), minus `.webm`, which
     /// AVFoundation cannot play.
@@ -107,7 +107,7 @@ final class PlaybackModel {
     /// *copy* of the indices rather than the queue itself, so turning it off
     /// puts the record back the way the artist sequenced it.
     private(set) var queue: [LibraryTrack] = []
-    private(set) var queueIndex: Int?
+    var queueIndex: Int?
     var isShuffling = false {
         didSet {
             guard oldValue != isShuffling else { return }
@@ -119,9 +119,12 @@ final class PlaybackModel {
             if isShuffling, let queueIndex, let position = order.firstIndex(of: queueIndex) {
                 order.swapAt(0, position)
             }
+            refreshGapless()
         }
     }
-    var repeatMode: RepeatMode = .off
+    var repeatMode: RepeatMode = .off {
+        didSet { if oldValue != repeatMode { refreshGapless() } }
+    }
 
     /// Keep going when the queue runs out, instead of stopping.
     ///
@@ -140,7 +143,10 @@ final class PlaybackModel {
     /// Start the next record before this one has finished, and cross the two
     /// volumes over.
     var crossfade = UserDefaults.standard.bool(forKey: "crossfade") {
-        didSet { UserDefaults.standard.set(crossfade, forKey: "crossfade") }
+        didSet {
+            UserDefaults.standard.set(crossfade, forKey: "crossfade")
+            refreshGapless()
+        }
     }
 
     /// Apple Music's own default. Long enough to be a blend rather than a
@@ -148,12 +154,12 @@ final class PlaybackModel {
     static let crossfadeDuration: TimeInterval = 6
 
     /// A fade in progress: when it began, and the deck being faded out.
-    private struct Fade {
+    struct Fade {
         var startedAt: Date
         var outgoing: AudioPlayer
     }
 
-    @ObservationIgnored private var fade: Fade?
+    @ObservationIgnored var fade: Fade?
 
     enum RepeatMode: CaseIterable {
         case off, all, one
@@ -169,12 +175,12 @@ final class PlaybackModel {
     }
 
     /// Positions into `queue`, in playing order.
-    @ObservationIgnored private var order: [Int] = []
-    @ObservationIgnored private var wasPlaying = false
+    @ObservationIgnored var order: [Int] = []
+    @ObservationIgnored var wasPlaying = false
 
     /// What was asked for — a local file, or a stream on a server. Lyrics
     /// are keyed on this, so they survive the cache being emptied.
-    @ObservationIgnored private(set) var currentURL: URL?
+    @ObservationIgnored var currentURL: URL?
 
     /// A remote track is not audible yet: the stream is filling, or — for a
     /// format AVFoundation cannot decode — the whole file is being fetched.
@@ -189,25 +195,37 @@ final class PlaybackModel {
     // time, and one `AudioPlayer` plays one file: the second deck is the
     // only way to overlap them. Off a fade the idle one sits silent and
     // costs nothing.
-    @ObservationIgnored private let deckA = AudioPlayer()
-    @ObservationIgnored private let deckB = AudioPlayer()
-    @ObservationIgnored private var liveIsA = true
+    @ObservationIgnored let deckA = AudioPlayer()
+    @ObservationIgnored let deckB = AudioPlayer()
+    @ObservationIgnored var liveIsA = true
 
     /// Server tracks, streamed. SFBAudioEngine only opens local files, and
     /// fetching a whole FLAC before the first note is a wait of seconds on a
     /// LAN and far longer off it. AVPlayer reads over HTTP with byte ranges,
     /// so a track starts almost at once and seeking does not need the rest.
-    @ObservationIgnored private let stream = AVPlayer()
-    @ObservationIgnored private var isStreaming = false
+    @ObservationIgnored let stream = AVPlayer()
+    @ObservationIgnored var isStreaming = false
 
     /// The deck the interface is about: the one whose track is showing, whose
     /// clock the scrubber follows. During a fade it is already the *incoming*
     /// record — the outgoing one is only a sound finishing behind it.
-    private var player: AudioPlayer { liveIsA ? deckA : deckB }
+    var player: AudioPlayer { liveIsA ? deckA : deckB }
 
     // MARK: Cast
 
     @ObservationIgnored let cast = CastController()
+
+    // MARK: Effects, gapless, offline
+
+    @ObservationIgnored var effects: AudioEffects?
+    @ObservationIgnored var deckEffects: [DeckEffects] = []
+    @ObservationIgnored var streamEffects: StreamEffects?
+    /// The playing file's ReplayGain tags, once read.
+    @ObservationIgnored var currentReplayGain: ReplayGainInfo?
+    /// The file queued behind the current one on the live deck.
+    @ObservationIgnored var pendingGapless: (index: Int, file: URL, origin: URL)?
+    /// A downloaded copy of a server track, when there is one.
+    @ObservationIgnored var localCopy: ((URL) -> URL?)?
     /// Where to start when play is pressed after casting ended — nothing is
     /// loaded on this Mac until then.
     @ObservationIgnored var pendingLocalResume: TimeInterval?
@@ -286,7 +304,7 @@ final class PlaybackModel {
         } else {
             // Off the end of the queue: stop where the music stopped rather
             // than silently restarting the record.
-            _ = try? player.pause()
+            _ = player.pause()
             stream.pause()
             if cast.isActive { cast.pause() }
             isPlaying = false
@@ -333,12 +351,13 @@ final class PlaybackModel {
         queue = [queue[queueIndex]]
         self.queueIndex = 0
         rebuildOrder()
+        refreshGapless()
     }
 
     // MARK: - Crossfade
 
     /// The record after this one, if the queue has one to give.
-    private var followingIndex: Int? {
+    var followingIndex: Int? {
         guard let queueIndex, let position = order.firstIndex(of: queueIndex) else { return nil }
         if order.indices.contains(position + 1) { return order[position + 1] }
         if repeatMode == .all { return order.first }
@@ -355,7 +374,7 @@ final class PlaybackModel {
         guard let next = followingIndex, queue.indices.contains(next) else { return }
         // Local files only: a server track has to be fetched before it can
         // play, and a fade cannot wait on a download.
-        guard queue[next].url.isFileURL else { return }
+        guard playableFile(for: queue[next].url) != nil else { return }
 
         fade = Fade(startedAt: .now, outgoing: player)
         liveIsA.toggle()
@@ -409,6 +428,14 @@ final class PlaybackModel {
             return
         }
 
+        // Downloaded for offline listening: the file, not the stream — it
+        // plays without the server, gaplessly, through the equalizer graph.
+        if !url.isFileURL, let local = localCopy?(url) {
+            stopStream()
+            play(local, describing: url)
+            return
+        }
+
         guard url.isFileURL else {
             startStream(url, generation: generation)
             return
@@ -445,7 +472,13 @@ final class PlaybackModel {
 
         displayTime = 0
         isBuffering = true
-        stream.replaceCurrentItem(with: AVPlayerItem(url: url))
+        let item = AVPlayerItem(url: url)
+        let tap = StreamEffects()
+        streamEffects = tap
+        currentReplayGain = nil
+        applyEffects()
+        tap.attach(to: item)
+        stream.replaceCurrentItem(with: item)
         stream.volume = Float(volume)
         stream.play()
         isPlaying = true
@@ -496,6 +529,8 @@ final class PlaybackModel {
             }
             self.track = info
             if let art = loaded.artwork { self.artwork = art }
+            self.currentReplayGain = loaded.replayGain
+            self.applyEffects()
             if let lyrics = loaded.lyrics {
                 self.lyrics = lyrics
                 self.lyricsSource = loaded.lyricsSource
@@ -569,7 +604,7 @@ final class PlaybackModel {
 
     /// `file` is what the engine plays; `origin` is what the track *is* —
     /// the same thing for a local library, a stream URL for a server.
-    private func play(_ file: URL, describing origin: URL) {
+    func play(_ file: URL, describing origin: URL) {
         // Audio first: it is the part with a perceptible delay, and it needs
         // nothing from the tag reader.
         do {
@@ -588,6 +623,8 @@ final class PlaybackModel {
         // silent if this file is the incoming half of a crossfade, since the
         // ramp is about to raise it.
         try? player.setVolume(Float(fade == nil ? volume : 0))
+        currentReplayGain = nil
+        applyEffects()
         displayTime = 0
         isPlaying = player.playbackState == .playing
         wasPlaying = isPlaying
@@ -614,10 +651,13 @@ final class PlaybackModel {
             self.artwork = loaded.artwork
             self.lyrics = loaded.lyrics
             self.lyricsSource = loaded.lyricsSource
+            self.currentReplayGain = loaded.replayGain
+            self.applyEffects()
             if let message = loaded.error, self.lastError == nil {
                 self.lastError = message
             }
         }
+        prepareGapless()
     }
 
     /// Identity for the cover cache: the artwork's own id, so the mini
@@ -775,6 +815,7 @@ final class PlaybackModel {
         var lyrics: TimedLyrics?
         var lyricsSource: String?
         var error: String?
+        var replayGain: ReplayGainInfo?
     }
 
     nonisolated static func read(_ url: URL, lyricsFor origin: URL) async -> Loaded {
@@ -799,7 +840,8 @@ final class PlaybackModel {
                     track: track,
                     artwork: cover(in: metadata),
                     lyrics: parsed,
-                    lyricsSource: source
+                    lyricsSource: source,
+                    replayGain: ReplayGainInfo(metadata)
                 )
             } catch {
                 // Playback already started, so this is not fatal: the file

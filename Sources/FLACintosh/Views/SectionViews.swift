@@ -602,6 +602,7 @@ struct SongsTable: View {
         }
         .contextMenu(forSelectionType: LibraryTrack.ID.self) { ids in
             Button("Play") { play(ids) }
+            AddToPlaylistMenu(tracks: songs.filter { ids.contains($0.id) })
             let chosen = songs.filter { ids.contains($0.id) && !$0.hasLyrics }
             if !chosen.isEmpty {
                 Button("Find Lyrics") { library.findLyrics(for: chosen) }

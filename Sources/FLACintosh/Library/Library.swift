@@ -51,6 +51,27 @@ struct LibraryTrack: Identifiable, Sendable, Equatable, Hashable {
     var source: LibrarySource = .folder
 
     var url: URL { id }
+
+    /// What identifies the track across launches: the file's path, or for a
+    /// server track its address without the credentials that change with
+    /// every login or request.
+    var key: String { Self.key(for: id) }
+
+    static func key(for url: URL) -> String {
+        url.isFileURL ? url.standardizedFileURL.path : RemoteCache.fingerprint(url)
+    }
+
+    /// The address as it may be written to disk: a server track's without
+    /// the login it was built with — Jellyfin's `api_key`, Subsonic's token
+    /// and salt. Its key is unchanged, so it still finds the track.
+    static func storable(_ url: URL) -> String {
+        guard !url.isFileURL, var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url.absoluteString
+        }
+        components.queryItems = components.queryItems?.filter { $0.name == "id" }
+        if components.queryItems?.isEmpty == true { components.queryItems = nil }
+        return components.string ?? url.absoluteString
+    }
 }
 
 /// Tracks grouped the way a record is.

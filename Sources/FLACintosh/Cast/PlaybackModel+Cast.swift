@@ -131,7 +131,7 @@ extension PlaybackModel {
         Task {
             do {
                 guard let host = cast.localAddress else { throw CastController.Failure.disconnected }
-                let media = try await CastMedia.prepare(url, listed: listed, host: host, viaMac: viaMac)
+                let media = try await CastMedia.prepare(localCopy?(url) ?? url, listed: listed, host: host, viaMac: viaMac)
                 guard generation == self.generation, cast.isActive else { return }
                 castViaMac = media.viaMac
                 do {
@@ -142,7 +142,7 @@ extension PlaybackModel {
                     guard generation == self.generation, cast.isActive else { return }
                     castRetried = true
                     castViaMac = true
-                    let fallback = try await CastMedia.prepare(url, listed: listed, host: host, viaMac: true)
+                    let fallback = try await CastMedia.prepare(localCopy?(url) ?? url, listed: listed, host: host, viaMac: true)
                     guard generation == self.generation, cast.isActive else { return }
                     try await cast.load(fallback, startAt: startAt, autoplay: autoplay)
                 }
