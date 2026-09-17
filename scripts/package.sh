@@ -108,8 +108,10 @@ done
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$executable"
 # `sort -u`: a universal binary lists each rpath once per architecture, and
 # one delete already removes it from both.
+# The grep matches nothing on toolchains that no longer embed one (relying
+# on the stable /usr/lib/swift instead) — not an error, just nothing to do.
 otool -l "$executable" | awk '/LC_RPATH/ { getline; getline; print $2 }' \
-    | grep -E '^/Library/Developer|^/Applications/Xcode' | sort -u \
+    | { grep -E '^/Library/Developer|^/Applications/Xcode' || true; } | sort -u \
     | while read -r path; do install_name_tool -delete_rpath "$path" "$executable"; done
 
 step "Making the icon"
