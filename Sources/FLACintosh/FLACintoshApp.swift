@@ -265,6 +265,9 @@ struct RootView: View {
         // the split view underneath and draws above anything stacked on it.
         .toolbar(showingNowPlaying ? .hidden : .visible, for: .windowToolbar)
         .toolbar {
+            // Not on the Recap: there, a reload arrow reads as "refresh the
+            // recap", which it is not — the recap updates by itself.
+            if section != .recap {
             ToolbarItem(placement: .primaryAction) {
                 // The same as ⌘R, for when files or a server have changed:
                 // there is no watcher, so the library only knows what it read.
@@ -279,6 +282,7 @@ struct RootView: View {
                 }
                 .help("Reload the library from the folder and every server (⌘R)")
                 .disabled(library.isScanning)
+            }
             }
         }
 
