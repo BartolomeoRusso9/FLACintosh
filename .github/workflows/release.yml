@@ -1,0 +1,86 @@
+name: Release
+
+# Builds FLACintosh.app and its .dmg with scripts/package.sh, and — for a
+# tag push — publishes them as a GitHub Release.
+#
+# Two ways to run it:
+#   git tag v0.3.0 && git push origin v0.3.0        # builds and releases
+#   Actions tab → Release → Run workflow             # builds only, no tag needed
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (e.g. 0.3.0) — no leading v"
+        required: true
+        default: "0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    # Apple Silicon, which is what x86_64 cross-compiles from; Sequoia, for
+    # the macOS 15 SDK the app itself requires.
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # SwiftPM's own cache of fetched dependencies (SFBAudioEngine and its
+      # binary frameworks), keyed on what is pinned — a change there is the
+      # only thing that should ever miss.
+      - name: Cache SwiftPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            .build/checkouts
+            .build/artifacts
+            ~/Library/Caches/org.swift.swiftpm
+          key: spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-
+
+      - name: Build FLACintosh.app and the disk image
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: scripts/package.sh
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FLACintosh-${{ steps.version.outputs.version }}
+          path: dist/FLACintosh-*.dmg
+          if-no-files-found: error
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/FLACintosh-*.dmg
+          generate_release_notes: true
+          # Ad hoc signed, not notarized: said once, on the release itself,
+          # rather than left for someone to discover at "Open Anyway".
+          body: |
+            Ad hoc signed, not notarized — the first launch needs
+            **System Settings → Privacy & Security → Open Anyway**.
+
+            See [DEVELOPMENT.md](../../blob/main/DEVELOPMENT.md) to build it
+            yourself instead.
