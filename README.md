@@ -1,4 +1,4 @@
-# macos-music-player
+# FLACintosh
 
 > **The name is a placeholder.** Working title until we pick a real one.
 
@@ -26,26 +26,39 @@ writes it with `--save-lrc`. What is missing is something to draw it.
 
 ## Status
 
-**Step 1 of 5.** Plays a file, reads its metadata and true format, and
-renders its lyrics one syllable at a time. That is the risky part and it
-works; the rest is ordinary app-building.
+**Step 4 of 5.** Reads a folder — or a Navidrome or Jellyfin server — into a
+library, shows it the way a music app should, plays it with lyrics one
+syllable at a time, and goes and finds those lyrics when a file has none.
 
 - [x] Playback, metadata, real sample rate / bit depth
 - [x] Enhanced-LRC parser with per-syllable timing
 - [x] Word-by-word lyrics view
-- [ ] Library: folder scan, sidebar, album grid
+- [x] Now Playing look: brand palette, cover art, colours drawn from the sleeve
+- [x] Library: folder scan, sidebar, album grid, songs, artists, search
+- [x] Queue: shuffle, repeat, next/previous, advance at end of track
+- [x] Lyrics from Apple and LRCLIB when a file has none, per track or per album
+- [x] Optional SpotiFLAC bridge for downloading
+- [x] Search Spotify and download through a SpotiFLAC server
+- [x] Navidrome / Subsonic and Jellyfin servers
+- [x] Metadata editor
 - [ ] Discord Rich Presence
-- [ ] `MPNowPlayingInfoCenter` + media keys
+- [x] `MPNowPlayingInfoCenter` + media keys: Control Center, menu bar, keyboard
+- [x] Google Cast: Chromecast, Google TV, Nest speakers and groups — unsupported formats and hi-res converted on the fly
+- [ ] Wrapped-style listening summary
 - [ ] Animation polish
 
 ## Running it
 
-**Xcode is not required** — the Command Line Tools are enough.
+**Xcode is not required** — the Command Line Tools are enough. macOS 15 or
+newer.
 
 ```bash
-swift run Player                                  # then ⌘O, or drop a file in
-swift run Player "/path/to/track.flac"            # or open one straight away
+swift run FLACintosh                                  # the library
+swift run FLACintosh "/path/to/track.flac"            # play that track straight away
 ```
+
+The library is a folder — `~/Music` unless you pick another with ⇧⌘O. It is
+re-read on launch and with ⌘R; there is no database to go stale.
 
 The first build takes several minutes: SFBAudioEngine compiles a pile of C++
 decoders. After that it is seconds.
@@ -58,6 +71,119 @@ Lyrics are looked for in two places, in order:
 Both are what SpotiFLAC writes, so a track downloaded with `--save-lrc` works
 with no further setup. The sidecar wins because it is the one a person can
 fix by hand.
+
+## Packaging
+
+```bash
+scripts/package.sh                       # dist/FLACintosh.app and dist/FLACintosh-0.1.0.dmg
+VERSION=0.2.0 BUILD_NUMBER=2 scripts/package.sh
+ARCHS=arm64 scripts/package.sh           # Apple Silicon only, one build instead of two
+```
+
+Still no Xcode. The script builds a release for Apple Silicon and Intel,
+puts the app bundle together — Info.plist, icon, and the decoder frameworks
+SFBAudioEngine links, which must travel inside the app — signs it ad hoc and
+wraps it in a disk image.
+
+The icon is `Assets/AppIcon.png`, 1024×1024. If it is missing the script
+draws a placeholder with `scripts/make-icon.swift`; replace the file to
+change it.
+
+The first launch of the app picks up the servers, folder and view choices
+saved by `swift run`, which keeps its settings under a different name.
+
+Ad hoc is not a Developer ID, so on any Mac but this one the first launch is
+blocked: **System Settings → Privacy & Security → Open Anyway**. Removing that
+step takes an Apple Developer account, `codesign` with its certificate and
+`xcrun notarytool`.
+
+## Finding lyrics for a file that has none
+
+The whole point of the app is words that are timed to the syllable, so
+looking for them is built in rather than left to the user and a browser.
+**Find Lyrics** on the Now Playing screen does one track; an album page does
+the rest of the record; right-clicking a song does just that song.
+
+Two providers, asked in this order:
+
+1. **Apple**, through a public relay — the only source that times
+   *syllables*, which is what makes the word-by-word display possible
+2. **LRCLIB** — free, fast, and line-level
+
+The order matters and is not a preference. Every provider is asked at once
+but they are *read* in order: LRCLIB answers in about a tenth of a second
+against Apple's one, so taking whoever finishes first turns the list into a
+set and reliably yields plain line-level lyrics — the word-by-word ones the
+order asked for would never get used.
+
+What comes back is written as an `.lrc` next to the audio file, which is
+where the app looks first anyway: the result survives a restart, can be
+fixed by hand, and is read by anything else that understands sidecars. A
+folder that cannot be written to falls back to a cache in Application
+Support.
+
+This is a Swift port of SpotiFLAC's `core/lyrics.py`, ported rather than
+shelled out to because it is the feature the app exists for and cannot
+depend on a `pip install`.
+
+```bash
+swift run LyricsCheck --fetch "Title" "Artist" [album] [duration]
+```
+
+## Servers
+
+Navidrome (or anything speaking Subsonic) and Jellyfin, added from the
+sidebar. Passwords go in the keychain.
+
+Tracks are fetched whole to a cache before they play, because SFBAudioEngine
+reads files and not streams — its input source asserts `url.isFileURL`. That
+turns out to be worth something rather than merely necessary: the cached file
+carries its own tags and artwork, so covers, metadata and the lyrics search
+all work exactly as they do for a local library.
+
+The cache is capped at **2 GB** by default — enough for an evening of
+lossless listening, since a FLAC album is 250-400 MB — and the limit is
+yours to change in Settings (⌘,), or to remove. When it is exceeded the
+least recently played tracks go first, ordered by modification date rather
+than access date: a volume mounted `noatime` makes every file look equally
+old, and eviction becomes random. A local folder library uses none of this.
+
+## SpotiFLAC
+
+Optional, and genuinely so: nothing is bundled, nothing here is required,
+and the app carries on without it. The Download shelf offers two ways in.
+
+### A SpotiFLAC server
+
+SpotiFLAC started with `--web` — in Docker, say, next to Jellyfin — is
+reached over its own web API. Give the Download shelf its address and the
+token set with `--web-token` / `SPOTIFLAC_WEB_TOKEN` (kept in the Keychain),
+and the window's search field searches Spotify on that shelf:
+
+- albums, songs and playlists, each marked **In Library** when the library
+  already has it — same title and artist, edition notes such as
+  "(Remastered)" ignored;
+- **Download** resolves the link on the server, then queues every track with
+  the download settings saved there, so the result is exactly what the
+  server's own page would have produced;
+- progress comes over the server's WebSocket; when a batch ends, each
+  Jellyfin is asked to scan and the servers are read again shortly after.
+
+In token mode the server keeps one working track list, shared with anyone
+on its web page at the same moment, so downloads from here run one after
+another.
+
+### SpotiFLAC on this Mac
+
+```bash
+pip install spotiflac
+```
+
+Installed, it is found through a login shell (an app launched from Finder
+inherits almost no `PATH`, and SpotiFLAC lives wherever the user's Python
+does), and the Download shelf opens its terminal UI (`--tui`) in Terminal, in
+the library folder — so what it downloads, `--save-lrc` sidecars included, is
+already where ⌘R will find it.
 
 ## Checking the parser
 
@@ -78,7 +204,7 @@ one-per-behaviour.
 | Target | What it is |
 | --- | --- |
 | `SyncedLyrics` | The parser and its model. No UI, no dependencies — the part worth testing. |
-| `Player` | The SwiftUI app. |
+| `FLACintosh` | The SwiftUI app. |
 | `LyricsCheck` | The parser's checks, and a dump mode for real files. |
 
 Audio comes from [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine):
@@ -99,19 +225,42 @@ downstream has to ask which dialect a file is in.
 
 ### The look
 
-The palette is not copied. It is the system's: `NSVisualEffectView`
-materials and semantic colours (`.primary`, `.secondary`, `.tertiary`,
-`.background`, `.quaternary`), which follow light and dark, the user's accent
-colour, reduced transparency and increased contrast on their own. Hard-coded
-greys are what make a clone look like a clone in one mode and wrong in the
-other.
+The Now Playing screen, and Apple Music's palette: **pink `#FF4E6B`**, **red
+`#FF0436`**, **white `#FFFFFF`**. Those three are the only colours the app is
+allowed to invent. Everything else on screen comes off the record itself.
+
+The ground is the cover's own colours: four dominant tints pulled out of a
+48-pixel thumbnail, pinned to a brightness white text can be read over, and
+drifting behind the words as soft radial blobs. No blur filter is involved —
+a blur is re-rasterised whenever what is under it moves, while a gradient
+that only slides and scales is a transform the render server animates by
+itself. That is what lets the background move behind lyrics that are already
+redrawing every frame.
+
+A washed-out sleeve gets its saturation lifted; a vivid one is left exactly
+as it was (clamping everything to one value turned two different browns into
+the same brown); a genuinely grey one stays grey, because the hue a grey
+reports is rounding error and borrowing it would tint the window a colour
+that is nowhere on the cover. A file with no cover falls back to pink and
+red.
+
+The stage is dark in both system appearances, and that is a decision rather
+than an oversight: white lyrics over an album's own colours only work on a
+dark ground, and flipping to a light one would mean giving up either the
+artwork tint or the white text. Apple Music makes the same call.
 
 ### The effect
 
-Not "colour the current word". Each syllable fills across its own duration
-behind a soft gradient edge, so the light travels *through* a long word; the
-lines around the current one dim, blur and shrink slightly rather than
-vanishing. That continuous motion is what the eye reads as following a voice.
+Not "colour the current word". Each syllable fills white across its own
+duration behind a soft gradient edge, so the light travels *through* a long
+word; the lines around the current one dim, blur and shrink slightly rather
+than vanishing. That continuous motion is what the eye reads as following a
+voice.
+
+The brand is used as light rather than as paint: a pink-to-red band rides the
+front of the sweep and is gone the moment the syllable ends. Colouring whole
+words instead would be unreadable at thirty points, and would say nothing
+about where in the word the voice is.
 
 `SyllableFlow` exists because an `HStack` never wraps and a single `Text`
 cannot animate its pieces independently — a line of lyrics needs both.

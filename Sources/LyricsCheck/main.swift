@@ -50,6 +50,13 @@ private func suite(_ name: String, _ body: () -> Void) {
 
 // Given a path, dump that file instead of running the fixtures — the quickest
 // way to tell a parsing problem from a rendering one.
+if CommandLine.arguments.count > 1, CommandLine.arguments[1] == "--fetch" {
+    // Network, so it cannot live among the offline checks below.
+    let arguments = Array(CommandLine.arguments.dropFirst(2))
+    let status = await Fetch.run(arguments)
+    exit(status)
+}
+
 if CommandLine.arguments.count > 1 {
     exit(RealFile.dump(CommandLine.arguments[1]))
 }

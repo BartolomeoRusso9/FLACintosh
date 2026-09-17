@@ -2,13 +2,13 @@
 import PackageDescription
 
 let package = Package(
-    name: "macos-music-player",
-    platforms: [.macOS(.v14)],
+    name: "FLACintosh",
+    platforms: [.macOS(.v15)],
     products: [
         // The parser and its model are a library on purpose: they are the
         // part worth testing, and they must stay runnable without a window.
         .library(name: "SyncedLyrics", targets: ["SyncedLyrics"]),
-        .executable(name: "Player", targets: ["Player"]),
+        .executable(name: "FLACintosh", targets: ["FLACintosh"]),
         .executable(name: "LyricsCheck", targets: ["LyricsCheck"]),
     ],
     dependencies: [
@@ -20,7 +20,7 @@ let package = Package(
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .executableTarget(
-            name: "Player",
+            name: "FLACintosh",
             dependencies: [
                 "SyncedLyrics",
                 .product(name: "SFBAudioEngine", package: "SFBAudioEngine"),
