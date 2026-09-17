@@ -1,13 +1,48 @@
+<div align="center">
+
+<img src="Assets/AppIcon.png" alt="FLACintosh icon" width="128" height="128" />
+
 # FLACintosh
 
-**A music player for your own lossless library, with lyrics that light up
-word by word.**
+**A music player for your own lossless library, with lyrics that light up word by word.**
+
+[![Latest release](https://img.shields.io/github/v/release/BartolomeoRusso9/FLACintosh?style=flat-square&color=FF0436&label=release)](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/BartolomeoRusso9/FLACintosh/total?style=flat-square&color=FF4E6B)](https://github.com/BartolomeoRusso9/FLACintosh/releases)
+[![macOS 15+](https://img.shields.io/badge/macOS-15%2B-000000?style=flat-square&logo=apple&logoColor=white)](#requirements)
+[![Swift 6](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](DEVELOPMENT.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)](LICENSE)
+
+[**Download**](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest) ·
+[Features](#features) ·
+[Installation](#installation) ·
+[Getting started](#getting-started) ·
+[Troubleshooting](#troubleshooting)
+
+</div>
+
+---
 
 FLACintosh plays the music you own — FLAC, ALAC and every other format —
 from a folder on your Mac or from your own Jellyfin or Navidrome server. It
 looks and feels like Apple Music, and it does the one thing Apple Music and
 Spotify will not do for your files: show **synchronised lyrics that follow
 the singer syllable by syllable**.
+
+A native Mac app written in SwiftUI — no Electron, no web view, no account.
+
+## Why FLACintosh?
+
+|  | FLACintosh | Apple Music | Spotify |
+| --- | :---: | :---: | :---: |
+| Word-by-word lyrics for your own files | ✅ | ❌ | ❌ |
+| Line-by-line lyrics for your own files | ✅ | ❌ | ❌ |
+| Finds missing lyrics and saves them | ✅ | ❌ | ❌ |
+| Plays from Jellyfin and Navidrome | ✅ | ❌ | ❌ |
+| Real bit depth and sample rate shown | ✅ | Partly | ❌ |
+| Plays FLAC, APE, WavPack, DSD | ✅ | ❌ | ❌ |
+| Google Cast | ✅ | ❌ | ✅ |
+| Listening recap | ✅ | ✅ | ✅ |
+| Local files without an account | ✅ | ✅ | ❌ |
 
 ## Features
 
@@ -33,6 +68,26 @@ the singer syllable by syllable**.
 - **Download music (optional).** Search Spotify and download in lossless
   quality through [SpotiFLAC](https://github.com/BartolomeoRusso9/SpotiFLAC-Module-Version).
 - **Edit tags** — title, artist, album and more — with **Get Info…**.
+
+## Supported sources and formats
+
+**Sources**
+
+- A folder on your Mac (subfolders included) — `~/Music` by default
+- [Jellyfin](https://jellyfin.org)
+- [Navidrome](https://navidrome.org), and other servers with a Subsonic API
+  such as Gonic or Airsonic-Advanced *(Navidrome is the one tested)*
+
+**Audio formats**
+
+| Lossless | Lossy | DSD |
+| --- | --- | --- |
+| FLAC, ALAC, WAV, AIFF, Monkey's Audio (APE), WavPack, TTA, Shorten | MP3, AAC (M4A, M4B), Ogg Vorbis, Opus, Musepack | DSF, DFF |
+
+High-resolution files play at their full sample rate and bit depth.
+
+**Lyrics**: Enhanced LRC (word timing), LRC (line timing), embedded or as a
+`.lrc` file.
 
 ## Requirements
 
@@ -215,6 +270,41 @@ the Cast button for those instead.
 **Lyrics highlight whole lines, not words** — those lyrics only have
 line-level timing. Try **Find Lyrics** again later: word-by-word lyrics
 come from Apple Music and are not available for every song.
+
+## Roadmap
+
+Ideas for what comes next — suggestions are welcome in
+[Issues](https://github.com/BartolomeoRusso9/FLACintosh/issues).
+
+- [ ] Playlists, and your server's playlists
+- [ ] Gapless playback and ReplayGain
+- [ ] Equalizer
+- [ ] Last.fm / ListenBrainz scrobbling
+- [ ] Offline downloads of server music
+- [ ] Menu bar mini player
+- [ ] Desktop and Notification Center widget
+- [ ] Localisation
+
+## Feedback and contributing
+
+Found a bug or have an idea? [Open an issue](https://github.com/BartolomeoRusso9/FLACintosh/issues/new)
+— for a bug, include your macOS version, where the music comes from (folder,
+Jellyfin, Navidrome) and the file format. Pull requests are welcome; see
+[DEVELOPMENT.md](DEVELOPMENT.md) to get the project building.
+
+## Acknowledgements
+
+- [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine) — the audio
+  engine behind every format FLACintosh plays
+- [LRCLIB](https://lrclib.net) — free, open synchronised lyrics
+- [SpotiFLAC](https://github.com/BartolomeoRusso9/SpotiFLAC-Module-Version) —
+  downloads and the lyrics format FLACintosh was built to show
+- [Jellyfin](https://jellyfin.org) and [Navidrome](https://navidrome.org) —
+  your music, served
+- [Feishin](https://github.com/jeffvli/feishin),
+  [Supersonic](https://github.com/supersonic-app/supersonic) and
+  [Finamp](https://github.com/jmshrv/finamp) — fellow players for self-hosted
+  music, and inspiration
 
 ## Building from source
 
