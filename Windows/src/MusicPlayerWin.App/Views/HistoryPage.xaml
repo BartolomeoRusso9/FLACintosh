@@ -34,7 +34,7 @@
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="130"/><ColumnDefinition Width="*"/><ColumnDefinition Width="70"/></Grid.ColumnDefinitions>
                                     <TextBlock Text="{Binding DateLabel}"/>
                                     <ProgressBar Grid.Column="1" Maximum="300" Value="{Binding Minutes}" Margin="10,0" VerticalAlignment="Center"/>
-                                    <TextBlock Grid.Column="2" Text="{Binding Minutes, StringFormat='{}{0:0} min'}" Foreground="{ThemeResource SubtleBrush}" TextAlignment="Right"/>
+                                    <TextBlock Grid.Column="2" Text="{Binding MinutesLabel}" Foreground="{ThemeResource SubtleBrush}" TextAlignment="Right"/>
                                 </Grid>
                             </DataTemplate>
                         </ListView.ItemTemplate>

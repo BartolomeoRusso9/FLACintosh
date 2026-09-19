@@ -5,7 +5,10 @@ namespace MusicPlayerWin.App.Views;
 
 public sealed partial class HistoryPage : Page
 {
-    private sealed record DailyRow(string DateLabel, double Minutes);
+    private sealed record DailyRow(string DateLabel, double Minutes)
+    {
+        public string MinutesLabel => $"{Minutes:0} min";
+    }
     public HistoryPage()
     {
         InitializeComponent();
