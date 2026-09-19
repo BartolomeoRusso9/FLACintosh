@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$Version = $Version -replace '^[vV]', ''
 
 $root = Split-Path -Parent $PSScriptRoot
 $dist = Join-Path $root 'dist'
