@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using MusicPlayerWin.Core.Library;
 
 namespace MusicPlayerWin.Core.Servers;
 

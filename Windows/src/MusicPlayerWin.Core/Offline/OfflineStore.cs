@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MusicPlayerWin.Core.Infrastructure;
+using MusicPlayerWin.Core.Library;
 
 namespace MusicPlayerWin.Core.Offline;
 

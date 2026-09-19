@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using MusicPlayerWin.Core.Library;
 
 namespace MusicPlayerWin.Core.Servers;
 
