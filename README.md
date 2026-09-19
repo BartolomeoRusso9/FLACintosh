@@ -9,6 +9,7 @@
 [![Latest release](https://img.shields.io/github/v/release/BartolomeoRusso9/FLACintosh?style=flat-square&color=FF0436&label=release)](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/BartolomeoRusso9/FLACintosh/total?style=flat-square&color=FF4E6B)](https://github.com/BartolomeoRusso9/FLACintosh/releases)
 [![macOS 15+](https://img.shields.io/badge/macOS-15%2B-000000?style=flat-square&logo=apple&logoColor=white)](#requirements)
+[![Windows 10+](https://img.shields.io/badge/Windows-10%2B-0078D4?style=flat-square&logo=windows&logoColor=white)](Windows/README.md)
 [![Swift 6](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](MacOS/DEVELOPMENT.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)](MacOS/LICENSE)
 
@@ -111,6 +112,9 @@ High-resolution files play at their full sample rate and bit depth.
 
 - macOS 15 Sequoia or later
 - Apple Silicon or Intel Mac
+- Windows 10 version 19041 or later for the Windows build; see
+  [Windows/BUILD-WINDOWS.md](Windows/BUILD-WINDOWS.md) for the SDK and tooling
+  requirements.
 
 ## Installation
 
