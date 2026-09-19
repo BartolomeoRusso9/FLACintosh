@@ -43,7 +43,7 @@ public static class FileAssociationService
             {
                 using var key = Registry.CurrentUser.OpenSubKey($@"Software\Classes\{ext}", writable: true);
                 if (key is null) continue;
-                if (string.Equals(key.GetValue(null)?.ToString(), ProgId, StringComparison.OrdinalIgnoreCase)) key.DeleteValue(null, false);
+                if (string.Equals(key.GetValue(null)?.ToString(), ProgId, StringComparison.OrdinalIgnoreCase)) key.DeleteValue(null!, false);
             }
             Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{ProgId}", false);
         }

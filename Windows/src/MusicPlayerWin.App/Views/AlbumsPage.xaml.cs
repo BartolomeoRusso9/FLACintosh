@@ -38,7 +38,7 @@ public sealed partial class AlbumsPage : Page
             App.Services.Offline.Download(album);
     }
 
-    private static async void AlbumArtwork_Loaded(object sender, RoutedEventArgs e)
+    private async void AlbumArtwork_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not Image image || image.DataContext is not LibraryAlbum album || album.Cover is not { Length: > 0 } cover)
             return;
