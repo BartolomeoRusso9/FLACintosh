@@ -1,11 +1,7 @@
 name: Release
 
-# Builds FLACintosh.app and its .dmg with scripts/package.sh, and — for a
-# tag push — publishes them as a GitHub Release.
-#
-# Two ways to run it:
-#   git tag v0.3.0 && git push origin v0.3.0        # builds and releases
-#   Actions tab → Release → Run workflow             # builds only, no tag needed
+# Builds the macOS and Windows packages, then publishes both in one release
+# when triggered by a version tag.
 on:
   push:
     tags:
@@ -21,7 +17,26 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  prepare:
+    runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Determine version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            version="${{ inputs.version }}"
+          else
+            version="${GITHUB_REF_NAME#v}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build-macos:
+    needs: prepare
     # Apple Silicon, which is what x86_64 cross-compiles from; Sequoia, for
     # the macOS 15 SDK the app itself requires.
     runs-on: macos-15
@@ -34,16 +49,6 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Determine version
-        id: version
-        run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            version="${{ inputs.version }}"
-          else
-            version="${GITHUB_REF_NAME#v}"
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
       # SwiftPM's own cache of fetched dependencies (SFBAudioEngine and its
       # binary frameworks), keyed on what is pinned — a change there is the
       # only thing that should ever miss.
@@ -51,36 +56,86 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            .build/checkouts
-            .build/artifacts
+            MacOS/.build/checkouts
+            MacOS/.build/artifacts
             ~/Library/Caches/org.swift.swiftpm
-          key: spm-${{ hashFiles('Package.resolved') }}
+          key: spm-${{ hashFiles('MacOS/Package.resolved') }}
           restore-keys: spm-
 
       - name: Build FLACintosh.app and the disk image
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          VERSION: ${{ needs.prepare.outputs.version }}
           BUILD_NUMBER: ${{ github.run_number }}
+        working-directory: MacOS
         run: scripts/package.sh
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: FLACintosh-${{ steps.version.outputs.version }}
-          path: dist/FLACintosh-*.dmg
+          name: FLACintosh-${{ needs.prepare.outputs.version }}
+          path: MacOS/dist/FLACintosh-*.dmg
           if-no-files-found: error
 
+  build-windows:
+    needs: prepare
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        shell: pwsh
+        run: dotnet --info
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ hashFiles('Windows/**/*.csproj', 'Windows/**/packages.lock.json') }}
+          restore-keys: nuget-
+
+      - name: Build MusicPlayerWin.exe package
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        shell: pwsh
+        run: ./Windows/scripts/package-win-exe.ps1 -Version "${{ needs.prepare.outputs.version }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPlayerWin-${{ needs.prepare.outputs.version }}
+          path: Windows/dist/MusicPlayerWin-*.zip
+          if-no-files-found: error
+
+  publish:
+    needs: [prepare, build-macos, build-windows]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: FLACintosh-${{ needs.prepare.outputs.version }}
+          path: dist/macos
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: MusicPlayerWin-${{ needs.prepare.outputs.version }}
+          path: dist/windows
+
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/FLACintosh-*.dmg
+          files: |
+            dist/macos/FLACintosh-*.dmg
+            dist/windows/MusicPlayerWin-*.zip
           generate_release_notes: true
-          # Ad hoc signed, not notarized: said once, on the release itself,
-          # rather than left for someone to discover at "Open Anyway".
           body: |
-            Ad hoc signed, not notarized — the first launch needs
+            macOS: ad hoc signed, not notarized — the first launch needs
             **System Settings → Privacy & Security → Open Anyway**.
 
-            See [DEVELOPMENT.md](../../blob/main/DEVELOPMENT.md) to build it
-            yourself instead.
+            Windows: x64 build packaged as a ZIP. Extract the archive and run
+            the EXE from the published output folder.

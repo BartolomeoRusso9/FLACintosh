@@ -8,7 +8,7 @@ Requirements: Windows 10 19041+ (Windows 11 recommended), Visual Studio 2022 wit
 ./scripts/test.ps1
 python scripts/static-verify.py
 ./scripts/publish-win-x64.ps1
-```
+```ok
 
 The published application is self-contained. The output directory is `artifacts/win-x64`.
 
