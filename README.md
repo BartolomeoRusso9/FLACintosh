@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Assets/AppIcon.png" alt="FLACintosh icon" width="128" height="128" />
+<img src="MacOS/Assets/AppIcon.png" alt="FLACintosh icon" width="128" height="128" />
 
 # FLACintosh
 
@@ -9,8 +9,8 @@
 [![Latest release](https://img.shields.io/github/v/release/BartolomeoRusso9/FLACintosh?style=flat-square&color=FF0436&label=release)](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/BartolomeoRusso9/FLACintosh/total?style=flat-square&color=FF4E6B)](https://github.com/BartolomeoRusso9/FLACintosh/releases)
 [![macOS 15+](https://img.shields.io/badge/macOS-15%2B-000000?style=flat-square&logo=apple&logoColor=white)](#requirements)
-[![Swift 6](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](DEVELOPMENT.md)
-[![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)](LICENSE)
+[![Swift 6](https://img.shields.io/badge/Swift-6-F05138?style=flat-square&logo=swift&logoColor=white)](MacOS/DEVELOPMENT.md)
+[![License: MIT](https://img.shields.io/badge/license-MIT-brightgreen?style=flat-square)](MacOS/LICENSE)
 
 [**Download**](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest) ·
 [Features](#features) ·
@@ -385,7 +385,7 @@ Ideas for what comes next — suggestions are welcome in
 Found a bug or have an idea? [Open an issue](https://github.com/BartolomeoRusso9/FLACintosh/issues/new)
 — for a bug, include your macOS version, where the music comes from (folder,
 Jellyfin, Navidrome) and the file format. Pull requests are welcome; see
-[DEVELOPMENT.md](DEVELOPMENT.md) to get the project building.
+[MacOS/DEVELOPMENT.md](MacOS/DEVELOPMENT.md) to get the project building.
 
 ## Acknowledgements
 
@@ -403,9 +403,9 @@ Jellyfin, Navidrome) and the file format. Pull requests are welcome; see
 
 ## Building from source
 
-See [DEVELOPMENT.md](DEVELOPMENT.md).
+See [MacOS/DEVELOPMENT.md](MacOS/DEVELOPMENT.md).
 
 ## License
 
-FLACintosh is released under the [MIT License](LICENSE). It uses
+FLACintosh is released under the [MIT License](MacOS/LICENSE). It uses
 [SFBAudioEngine](https://github.com/sbooth/SFBAudioEngine), also MIT.
