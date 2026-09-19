@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference='Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $project = Join-Path $root 'src\MusicPlayerWin.App\MusicPlayerWin.App.csproj'
-dotnet publish $project -c $Configuration -r win-x64 --self-contained true -p:PublishSingleFile=false -o (Join-Path $root $Output)
+dotnet publish $project -c $Configuration -p:Platform=x64 -r win-x64 --self-contained true -p:PublishSingleFile=false -o (Join-Path $root $Output)
 if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }

@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -42,7 +42,7 @@ jobs:
     runs-on: macos-15
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Show toolchain
         run: |
@@ -53,7 +53,7 @@ jobs:
       # binary frameworks), keyed on what is pinned — a change there is the
       # only thing that should ever miss.
       - name: Cache SwiftPM dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             MacOS/.build/checkouts
@@ -70,7 +70,7 @@ jobs:
         run: scripts/package.sh
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: FLACintosh-${{ needs.prepare.outputs.version }}
           path: MacOS/dist/FLACintosh-*.dmg
@@ -81,10 +81,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up .NET 8
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 8.0.x
 
@@ -93,7 +93,7 @@ jobs:
         run: dotnet --info
 
       - name: Cache NuGet packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.nuget/packages
           key: nuget-${{ hashFiles('Windows/**/*.csproj', 'Windows/**/packages.lock.json') }}
@@ -107,7 +107,7 @@ jobs:
         run: ./Windows/scripts/package-win-exe.ps1 -Version "${{ needs.prepare.outputs.version }}"
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: MusicPlayerWin-${{ needs.prepare.outputs.version }}
           path: Windows/dist/MusicPlayerWin-*.zip
@@ -116,17 +116,17 @@ jobs:
   publish:
     needs: [prepare, build-macos, build-windows]
     if: startsWith(github.ref, 'refs/tags/')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Download macOS artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: FLACintosh-${{ needs.prepare.outputs.version }}
           path: dist/macos
 
       - name: Download Windows artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: MusicPlayerWin-${{ needs.prepare.outputs.version }}
           path: dist/windows
