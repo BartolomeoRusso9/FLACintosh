@@ -1,11 +1,12 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Windows.Foundation;
 using Size = Windows.Foundation.Size;
 
 namespace MusicPlayerWin.App.Controls;
 
 /// <summary>Simple wrapping panel for lyric syllables, keeping each TextBlock independently animatable.</summary>
-public sealed class SyllableFlowPanel : Panel
+public sealed class SyllableFlowPanel : Microsoft.UI.Xaml.Controls.Panel
 {
     public double Spacing
     {
