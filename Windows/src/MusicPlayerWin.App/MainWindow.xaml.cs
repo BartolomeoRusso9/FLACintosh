@@ -46,7 +46,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        KeyDown += MainWindow_KeyDown;
+        RootGrid.KeyDown += MainWindow_KeyDown;
         AppWindow.Resize(new Windows.Graphics.SizeInt32(1280, 820));
 
         Navigation.SelectedItem = Navigation.MenuItems[0];

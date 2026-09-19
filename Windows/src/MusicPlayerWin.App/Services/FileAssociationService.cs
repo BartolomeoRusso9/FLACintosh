@@ -42,7 +42,8 @@ public static class FileAssociationService
             foreach (var ext in new[] { ".flac", ".mp3", ".m4a", ".m4b", ".aac", ".wav", ".aiff", ".aif", ".ogg", ".oga", ".opus", ".wma", ".ape", ".wv", ".mpc", ".dsf", ".dff", ".tta", ".shn" })
             {
                 using var key = Registry.CurrentUser.OpenSubKey($@"Software\Classes\{ext}", writable: true);
-                if (string.Equals(key?.GetValue(null)?.ToString(), ProgId, StringComparison.OrdinalIgnoreCase)) key.DeleteValue(null, false);
+                if (key is null) continue;
+                if (string.Equals(key.GetValue(null)?.ToString(), ProgId, StringComparison.OrdinalIgnoreCase)) key.DeleteValue(null, false);
             }
             Registry.CurrentUser.DeleteSubKeyTree($@"Software\Classes\{ProgId}", false);
         }

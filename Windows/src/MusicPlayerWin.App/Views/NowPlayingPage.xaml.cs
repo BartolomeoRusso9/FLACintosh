@@ -133,10 +133,11 @@ public sealed partial class NowPlayingPage : Page
         _lastLine = lineIndex;
     }
 
-    private void ConfigureCanvas(LibraryTrack track)
+    private void ConfigureCanvas(LibraryTrack? track)
     {
         CanvasPlayer.Visibility = Visibility.Collapsed;
         CanvasSource.Text = "";
+        if (track is null) return;
         try
         {
             var path = track.Url.IsFile ? CanvasLocator.Find(track.Url.LocalPath) : null;

@@ -57,7 +57,8 @@ public sealed class LocalMediaServer : IAsyncDisposable
             {
                 await WriteResponseAsync(stream, 400, "text/plain", "Bad request\n"u8.ToArray(), cancellationToken).ConfigureAwait(false); return;
             }
-            if (request.Path != $"/media/{_token}")
+            var parsedRequest = request.Value;
+            if (parsedRequest.Path != $"/media/{_token}")
             {
                 await WriteResponseAsync(stream, 404, "text/plain", "Not found\n"u8.ToArray(), cancellationToken).ConfigureAwait(false); return;
             }
@@ -66,7 +67,7 @@ public sealed class LocalMediaServer : IAsyncDisposable
             var length = info.Length;
             long start = 0, end = length - 1;
             var partial = false;
-            if (request.Range is { } range)
+            if (parsedRequest.Range is { } range)
             {
                 partial = true;
                 start = Math.Max(0, range.start);
@@ -82,7 +83,7 @@ public sealed class LocalMediaServer : IAsyncDisposable
             var status = partial ? "206 Partial Content" : "200 OK";
             var header = $"HTTP/1.1 {status}\r\nContent-Type: {mime}\r\nAccept-Ranges: bytes\r\nContent-Length: {bodyLength}\r\nContent-Disposition: inline; filename=\"{SanitizeFileName(Path.GetFileName(_file))}\"\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n{(partial ? $"Content-Range: bytes {start}-{end}/{length}\r\n" : "")}\r\n";
             await WriteRawAsync(stream, header, cancellationToken).ConfigureAwait(false);
-            if (request.Method == "HEAD") return;
+            if (parsedRequest.Method == "HEAD") return;
 
             await using var file = new FileStream(_file, FileMode.Open, FileAccess.Read, FileShare.Read, 128 * 1024, FileOptions.Asynchronous | FileOptions.SequentialScan);
             file.Position = start;

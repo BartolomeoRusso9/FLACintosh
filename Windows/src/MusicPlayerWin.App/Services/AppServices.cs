@@ -87,7 +87,7 @@ public sealed class AppServices : IAsyncDisposable
     public IReadOnlyList<ListeningDay> ListeningDays => _history.Daily(DateTimeOffset.UtcNow.AddDays(-29));
     public IReadOnlyList<ServerPlaylist> ServerPlaylists => _serverPlaylists.ToArray();
     public IReadOnlyList<LibrarySource> Sources => new[] { LibrarySource.Folder }.Concat(_servers.Servers.Select(s => LibrarySource.Server(s.Id))).ToArray();
-    public IReadOnlyList<OfflineProgress> ActiveOfflineDownloads => Offline.Progress.Values.ToArray();
+    public IReadOnlyDictionary<string, OfflineProgress> ActiveOfflineDownloads => Offline.Progress;
     public bool IsScanning { get; private set; }
     public int ScanCompleted { get; private set; }
     public int ScanTotal { get; private set; }

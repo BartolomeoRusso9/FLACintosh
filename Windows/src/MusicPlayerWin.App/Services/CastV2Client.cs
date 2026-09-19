@@ -223,7 +223,11 @@ public sealed class CastV2Client : IAsyncDisposable
     private static void WriteBytes(List<byte> bytes, int field, byte[] value) { WriteVarint(bytes, (uint)((field << 3) | 2)); WriteVarint(bytes, (uint)value.Length); bytes.AddRange(value); }
     private static void WriteVarint(List<byte> bytes, uint value) { while (value >= 0x80) { bytes.Add((byte)(value | 0x80)); value >>= 7; } bytes.Add((byte)value); }
 
-    public async ValueTask DisposeAsync() => await DisconnectAsync().ConfigureAwait(false);
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        await DisconnectAsync().ConfigureAwait(false);
+    }
 
     private async Task DisconnectAsync()
     {
