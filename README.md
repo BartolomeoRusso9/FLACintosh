@@ -16,8 +16,8 @@
 [**Download**](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest) ·
 [Features](#features) ·
 [Installation](#installation) ·
-[Getting started](#getting-started) ·
-[Troubleshooting](#troubleshooting)
+[Getting started](#getting-started-on-macos) ·
+[Troubleshooting](#troubleshooting-on-macos)
 
 </div>
 
@@ -92,7 +92,8 @@ The repository is organized by platform: the macOS implementation lives in
 
 **Sources**
 
-- A folder on your Mac (subfolders included) — `~/Music` by default
+- A local music folder (subfolders included) — `~/Music` on macOS, or the
+  Windows Music library
 - [Jellyfin](https://jellyfin.org)
 - [Navidrome](https://navidrome.org), and other servers with a Subsonic API
   such as Gonic or Airsonic-Advanced *(Navidrome is the one tested)*
@@ -110,13 +111,20 @@ High-resolution files play at their full sample rate and bit depth.
 
 ## Requirements
 
+### macOS
+
 - macOS 15 Sequoia or later
 - Apple Silicon or Intel Mac
-- Windows 10 version 19041 or later for the Windows build; see
-  [Windows/BUILD-WINDOWS.md](Windows/BUILD-WINDOWS.md) for the SDK and tooling
-  requirements.
+
+### Windows
+
+- Windows 10 version 19041 or later
+- .NET 8 SDK and the Windows App SDK build prerequisites; see
+  [Windows/BUILD-WINDOWS.md](Windows/BUILD-WINDOWS.md)
 
 ## Installation
+
+### Install on macOS
 
 1. Download the latest **FLACintosh-x.y.z.dmg** from the
    [Releases](../../releases) page.
@@ -125,7 +133,15 @@ High-resolution files play at their full sample rate and bit depth.
    developer: open **System Settings → Privacy & Security**, scroll down and
    click **Open Anyway**. You only need to do this once.
 
-## Getting started
+### Install on Windows
+
+1. Download **MusicPlayerWin-x.y.z-win-x64.zip** from the
+  [Releases](../../releases) page.
+2. Extract the ZIP to a folder of your choice.
+3. Run `MusicPlayerWin.exe`. For build requirements and local development,
+  see [Windows/README.md](Windows/README.md).
+
+## Getting started on macOS
 
 **Play music from your Mac.** FLACintosh reads your **Music** folder. To use
 another one, click **Choose Folder…** at the bottom of the sidebar (or press
@@ -261,7 +277,7 @@ name and description will do), turn on **Scrobble to Last.fm**, paste the
 **API key** and **shared secret**, and click **Connect…**. Last.fm opens in
 your browser: click **Yes, allow access**, and FLACintosh connects on its own.
 
-## Menu bar player
+## Menu bar player on macOS
 
 The note icon in the menu bar opens a small player: cover, song, the lyric
 line being sung, progress, controls, volume and the equalizer. Turn it off in
@@ -329,9 +345,9 @@ Open **FLACintosh → Settings** (⌘,).
 
 ## Privacy
 
-FLACintosh has no account, no analytics and no tracking. Your library,
-listening history and settings stay on your Mac; server passwords are kept
-in the Keychain. The app only goes online to:
+FLACintosh has no account, no analytics and no tracking. Your library and
+listening history stay on your computer. Server passwords are kept in the
+macOS Keychain or Windows Credential Manager. The app only goes online to:
 
 - talk to **your own servers** and Cast devices;
 - look up **lyrics** when you click Find Lyrics (Apple Music, through a
@@ -342,9 +358,10 @@ in the Keychain. The app only goes online to:
 - send your listens to **Last.fm** or **ListenBrainz**, only if you turn
   scrobbling on.
 
-Tokens and secrets for Last.fm and ListenBrainz are kept in the Keychain.
+Tokens and secrets for Last.fm and ListenBrainz are kept in the macOS Keychain
+or Windows Credential Manager.
 
-## Troubleshooting
+## Troubleshooting on macOS
 
 **"FLACintosh can't be opened because Apple cannot check it"** — see step 3
 of [Installation](#installation).
@@ -414,12 +431,12 @@ Jellyfin, Navidrome) and the file format. Pull requests are welcome; see
 
 ## Building from source
 
-### macOS
+### Build on macOS
 
 See [MacOS/DEVELOPMENT.md](MacOS/DEVELOPMENT.md) for running the app,
 packaging releases and working on the Swift sources.
 
-### Windows
+### Build on Windows
 
 See [Windows/README.md](Windows/README.md) for the Windows implementation and
 [Windows/BUILD-WINDOWS.md](Windows/BUILD-WINDOWS.md) for build and test
