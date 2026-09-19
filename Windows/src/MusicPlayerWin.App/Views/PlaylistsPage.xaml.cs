@@ -43,7 +43,7 @@ public sealed partial class PlaylistsPage : Page
         Refresh();
     }
 
-    private async void Playlist_Click(object sender, ItemClickEventArgs e)
+    private void Playlist_Click(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is Playlist playlist)
             App.MainWindow.ShowPlaylist(playlist);

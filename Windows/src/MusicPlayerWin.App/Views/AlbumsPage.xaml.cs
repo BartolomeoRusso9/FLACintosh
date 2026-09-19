@@ -26,7 +26,7 @@ public sealed partial class AlbumsPage : Page
         EmptyState.Visibility = albums.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private async void AlbumsGrid_ItemClick(object sender, ItemClickEventArgs e)
+    private void AlbumsGrid_ItemClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is LibraryAlbum album)
             App.MainWindow.ShowAlbum(album);

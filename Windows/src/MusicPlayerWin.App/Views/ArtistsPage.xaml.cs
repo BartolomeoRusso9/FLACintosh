@@ -23,7 +23,7 @@ public sealed partial class ArtistsPage : Page
         EmptyState.Visibility = artists.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private async void ArtistsList_ItemClick(object sender, ItemClickEventArgs e)
+    private void ArtistsList_ItemClick(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is not LibraryArtist artist) return;
         App.MainWindow.ShowArtist(artist);

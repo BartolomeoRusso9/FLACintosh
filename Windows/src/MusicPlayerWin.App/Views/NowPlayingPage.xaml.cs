@@ -44,9 +44,9 @@ public sealed partial class NowPlayingPage : Page
         try { CanvasPlayer.MediaPlayer?.Pause(); } catch { }
     }
 
-    private async void PlaybackOnTrackChanged(object? sender, EventArgs e)
+    private void PlaybackOnTrackChanged(object? sender, EventArgs e)
     {
-        DispatcherQueue.TryEnqueue(async () => await LoadCurrentTrackAsync());
+        DispatcherQueue.TryEnqueue(() => _ = LoadCurrentTrackAsync());
     }
 
     private void ServicesOnChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(RefreshLyricsPosition);
