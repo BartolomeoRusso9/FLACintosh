@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using TagLib;
+using IOFile = System.IO.File;
 
 namespace MusicPlayerWin.Core.Library;
 
@@ -120,7 +121,7 @@ public static class LibraryScanner
                     .Where(t => t.Id.IsFile)
                     .Select(t =>
                     {
-                        try { return File.GetLastWriteTimeUtc(t.Id.LocalPath); }
+                        try { return IOFile.GetLastWriteTimeUtc(t.Id.LocalPath); }
                         catch { return DateTime.MinValue; }
                     })
                     .DefaultIfEmpty(DateTime.MinValue)
@@ -174,7 +175,7 @@ public static class LibraryScanner
                 : tag.Album;
 
             var sidecar = Path.ChangeExtension(uri.LocalPath, ".lrc");
-            var hasLyrics = File.Exists(sidecar) || !string.IsNullOrWhiteSpace(tag.Lyrics);
+            var hasLyrics = IOFile.Exists(sidecar) || !string.IsNullOrWhiteSpace(tag.Lyrics);
 
             byte[]? cover = null;
             var picture = tag.Pictures
@@ -224,7 +225,7 @@ public static class LibraryScanner
             var path = Path.Combine(directory, name);
             try
             {
-                if (File.Exists(path)) return File.ReadAllBytes(path);
+                if (IOFile.Exists(path)) return IOFile.ReadAllBytes(path);
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }

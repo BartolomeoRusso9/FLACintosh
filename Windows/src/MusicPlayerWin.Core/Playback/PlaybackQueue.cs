@@ -249,6 +249,7 @@ public sealed class PlaybackQueue
     {
         if (CurrentIndex is not int current || current < 0 || current >= _queue.Count) { ClearQueue(); return; }
         var currentTrack = _queue[current];
+        var position = _order.IndexOf(current);
         var keep = _order.Take(position + 1).ToHashSet();
         _queue = _queue.Where((_, i) => keep.Contains(i)).ToList();
         RebuildOrder();

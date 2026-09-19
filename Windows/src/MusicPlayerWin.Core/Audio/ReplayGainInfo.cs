@@ -1,5 +1,6 @@
 using System.Globalization;
 using TagLib;
+using IOFile = System.IO.File;
 
 namespace MusicPlayerWin.Core.Audio;
 
@@ -39,7 +40,7 @@ public static class ReplayGainReader
 {
     public static ReplayGainInfo? Read(Uri source)
     {
-        if (source is null || !source.IsFile || !File.Exists(source.LocalPath)) return null;
+        if (source is null || !source.IsFile || !IOFile.Exists(source.LocalPath)) return null;
 
         try
         {

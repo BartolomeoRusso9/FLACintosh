@@ -155,7 +155,7 @@ public sealed class JellyfinClient : IMusicServerClient
         {
             if (_userId is not null && _token is not null) return _userId;
 
-            using var request = new HttpRequestMessage(HttpMethod.Post, Build("Users/AuthenticateByName", []));
+            using var request = new HttpRequestMessage(HttpMethod.Post, Build("Users/AuthenticateByName", new Dictionary<string, string>()));
             request.Headers.TryAddWithoutValidation("Authorization", AuthorizationHeader());
             request.Content = new StringContent(JsonSerializer.Serialize(new { Username = _server.Username, Pw = _password }), Encoding.UTF8, "application/json");
 

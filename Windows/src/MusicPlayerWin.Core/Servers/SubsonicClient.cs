@@ -60,7 +60,7 @@ public sealed class SubsonicClient : IMusicServerClient
 
     public async Task<IReadOnlyList<ServerPlaylist>> PlaylistsAsync(CancellationToken cancellationToken = default)
     {
-        var listed = await GetAsync<PlaylistListResponse>("getPlaylists", [], cancellationToken).ConfigureAwait(false);
+        var listed = await GetAsync<PlaylistListResponse>("getPlaylists", new Dictionary<string, string>(), cancellationToken).ConfigureAwait(false);
         var result = new List<ServerPlaylist>();
         foreach (var playlist in listed.Playlists ?? [])
         {
@@ -74,7 +74,7 @@ public sealed class SubsonicClient : IMusicServerClient
 
     public async Task PingAsync(CancellationToken cancellationToken = default)
     {
-        _ = await GetAsync<EmptyResponse>("ping", [], cancellationToken).ConfigureAwait(false);
+        _ = await GetAsync<EmptyResponse>("ping", new Dictionary<string, string>(), cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<LibraryAlbum> ReadAlbumAsync(Album album, CancellationToken ct)
@@ -123,7 +123,7 @@ public sealed class SubsonicClient : IMusicServerClient
             if (error.Code == 40) throw new MusicServerException("Subsonic rejected the credentials.");
             throw new MusicServerException(error.Message ?? $"Subsonic error {error.Code}.");
         }
-        var value = typeof(T) switch
+        object? value = typeof(T) switch
         {
             _ when typeof(T) == typeof(AlbumListResponse) => envelope.Response.AlbumList2,
             _ when typeof(T) == typeof(AlbumWithSongsResponse) => envelope.Response.Album,

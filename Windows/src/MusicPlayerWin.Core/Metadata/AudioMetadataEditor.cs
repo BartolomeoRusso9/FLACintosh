@@ -1,4 +1,5 @@
 using TagLib;
+using IOFile = System.IO.File;
 
 namespace MusicPlayerWin.Core.Metadata;
 
@@ -55,7 +56,7 @@ public sealed class AudioMetadataEditor
     {
         if (uri is null || !uri.IsFile)
             throw new ArgumentException("Metadata editing is available only for local files.", nameof(uri));
-        if (!File.Exists(uri.LocalPath))
+        if (!IOFile.Exists(uri.LocalPath))
             throw new FileNotFoundException("The audio file no longer exists.", uri.LocalPath);
     }
 
