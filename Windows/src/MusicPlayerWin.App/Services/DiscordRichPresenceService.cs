@@ -51,7 +51,7 @@ public sealed class DiscordRichPresenceService : IAsyncDisposable
         }
 
         var duration = track.Duration is > 0 ? (long?)Math.Round(track.Duration.Value) : null;
-        var key = $"{track.Title}|{track.Artist}|{track.Album}|{duration}|{showArtwork}|{Math.Floor((DateTimeOffset.UtcNow.ToUnixTimeSeconds()) / 3)}";
+        var key = $"{track.Title}|{track.Artist}|{track.Album}|{duration}|{showArtwork}|{Math.Floor(DateTimeOffset.UtcNow.ToUnixTimeSeconds() / 3d)}";
         if (key == _lastKey) return;
         _lastKey = key;
         _start = DateTimeOffset.UtcNow;
@@ -185,7 +185,7 @@ public sealed class DiscordRichPresenceService : IAsyncDisposable
     private static bool TextEquals(string? left, string? right)
     {
         if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right)) return false;
-        static string N(string value) => new(value.Normalize(System.Text.NormalizationForm.FormD).Where(ch => !System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch).Equals(System.Globalization.UnicodeCategory.NonSpacingMark)).ToArray()).ToLowerInvariant().Replace(" ", "").Replace("-", "");
+        static string N(string value) => new string(value.Normalize(System.Text.NormalizationForm.FormD).Where(ch => !System.Globalization.CharUnicodeInfo.GetUnicodeCategory(ch).Equals(System.Globalization.UnicodeCategory.NonSpacingMark)).ToArray()).ToLowerInvariant().Replace(" ", "").Replace("-", "");
         return N(left).Contains(N(right), StringComparison.Ordinal) || N(right).Contains(N(left), StringComparison.Ordinal);
     }
 

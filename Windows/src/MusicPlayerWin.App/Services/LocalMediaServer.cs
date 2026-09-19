@@ -48,7 +48,7 @@ public sealed class LocalMediaServer : IAsyncDisposable
 
     private async Task HandleAsync(TcpClient client, CancellationToken cancellationToken)
     {
-        using (client)
+        using var clientScope = client;
         using var stream = client.GetStream();
         try
         {

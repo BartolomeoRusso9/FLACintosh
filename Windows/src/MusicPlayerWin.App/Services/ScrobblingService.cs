@@ -37,7 +37,7 @@ public sealed class ScrobblingService : IAsyncDisposable
             if (saved is not null) foreach (var item in saved) _pending.Enqueue(item);
         }
         catch { }
-        _history.PlayRecorded += (_, record) =>
+        _history.PlayRecorded += record =>
         {
             lock (_pending) { _pending.Enqueue(record); SaveQueueLocked(); }
             _ = FlushAsync();

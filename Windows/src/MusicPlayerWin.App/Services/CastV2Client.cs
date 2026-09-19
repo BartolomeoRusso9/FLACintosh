@@ -184,7 +184,7 @@ public sealed class CastV2Client : IAsyncDisposable
             {
                 try
                 {
-                    using var doc = JsonDocument.Parse(proto.AsSpan(offset, checked((int)length)));
+                    using var doc = JsonDocument.Parse(proto.AsMemory(offset, checked((int)length)));
                     return doc.RootElement.Clone();
                 }
                 catch { return null; }

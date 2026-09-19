@@ -28,4 +28,9 @@
   <ItemGroup>
     <ProjectReference Include="..\MusicPlayerWin.Core\MusicPlayerWin.Core.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml" />
+    <Page Include="**\*.xaml" Exclude="App.xaml" />
+  </ItemGroup>
 </Project>

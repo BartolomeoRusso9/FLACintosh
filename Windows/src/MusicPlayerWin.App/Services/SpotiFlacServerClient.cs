@@ -1,4 +1,5 @@
 using System.Net.WebSockets;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -66,7 +67,7 @@ public sealed class SpotiFlacServerClient : IAsyncDisposable
     }
 
     private Handler? _pendingTracklist;
-    private readonly record struct Handler(TaskCompletionSource<SpotiFlacTracklist> Tcs, string Link) { public Action<JsonElement>? Metadata { get; init; } }
+    private sealed record Handler(TaskCompletionSource<SpotiFlacTracklist> Tcs, string Link) { public Action<JsonElement>? Metadata { get; init; } }
     private JsonElement _header;
 
     private void HandleMetadata(JsonElement value) => _header = value;

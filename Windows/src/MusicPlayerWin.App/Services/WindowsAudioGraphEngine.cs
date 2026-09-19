@@ -5,6 +5,7 @@ using Windows.Media;
 using Windows.Media.Audio;
 using Windows.Media.Core;
 using Windows.Media.Playback;
+using Windows.Media.Render;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using System.Security.Cryptography;
@@ -87,7 +88,7 @@ public sealed class WindowsAudioGraphEngine : IAudioEngine, IAudioEffectsEngine,
             var outputResult = await graph.CreateDeviceOutputNodeAsync().AsTask(cancellationToken).ConfigureAwait(false);
             if (outputResult.Status != AudioDeviceNodeCreationStatus.Success || outputResult.DeviceOutputNode is null)
             {
-                graph.Close();
+                graph.Dispose();
                 throw new InvalidOperationException($"Audio output creation failed: {outputResult.Status}");
             }
 
@@ -95,8 +96,8 @@ public sealed class WindowsAudioGraphEngine : IAudioEngine, IAudioEffectsEngine,
             var inputResult = await graph.CreateMediaSourceAudioInputNodeAsync(mediaSource).AsTask(cancellationToken).ConfigureAwait(false);
             if (inputResult.Status != MediaSourceAudioInputNodeCreationStatus.Success || inputResult.Node is null)
             {
-                outputResult.DeviceOutputNode.Close();
-                graph.Close();
+                outputResult.DeviceOutputNode.Dispose();
+                graph.Dispose();
                 mediaSource.Dispose();
                 throw new InvalidOperationException($"Audio input creation failed: {inputResult.Status}");
             }
@@ -351,11 +352,11 @@ public sealed class WindowsAudioGraphEngine : IAudioEngine, IAudioEffectsEngine,
         {
             try { input.MediaSourceCompleted -= InputOnMediaSourceCompleted; } catch { }
             try { input.Stop(); } catch { }
-            try { input.Close(); } catch { }
+            try { input.Dispose(); } catch { }
         }
         try { graph?.Stop(); } catch { }
-        try { output?.Close(); } catch { }
-        try { graph?.Close(); } catch { }
+        try { output?.Dispose(); } catch { }
+        try { graph?.Dispose(); } catch { }
         try { source?.Dispose(); } catch { }
         await Task.CompletedTask;
     }

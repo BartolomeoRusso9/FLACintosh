@@ -19,7 +19,7 @@ public sealed class CastDiscoveryService
         udp.Client.Bind(new IPEndPoint(IPAddress.Any, 5353));
         try { udp.JoinMulticastGroup(MulticastAddress); } catch { }
         var query = BuildQuery(ServiceName, 12);
-        await udp.SendAsync(query, query.Length, new IPEndPoint(MulticastAddress, 5353), cancellationToken).ConfigureAwait(false);
+        await udp.SendAsync(query, new IPEndPoint(MulticastAddress, 5353), cancellationToken).ConfigureAwait(false);
 
         var instances = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var srvs = new Dictionary<string, (string host, int port)>(StringComparer.OrdinalIgnoreCase);

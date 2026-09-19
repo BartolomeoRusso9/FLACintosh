@@ -114,7 +114,10 @@ public sealed class AppServices : IAsyncDisposable
         _scrobbling.Configure(integrations.LastFmEnabled, integrations.LastFmApiKey, integrations.LastFmSharedSecret, integrations.ListenBrainzEnabled, integrations.ListenBrainzServer);
         var spotToken = WindowsCredentialStore.Read("MusicPlayerWin/SpotiFlac") ?? "";
         if (!string.IsNullOrWhiteSpace(integrations.SpotiFlacAddress) && !string.IsNullOrWhiteSpace(spotToken))
-            _ = _spotiFlacServer.ConfigureAsync(integrations.SpotiFlacAddress, spotToken).ContinueWith(t => t.Exception is not null ? AppLog.Warn("SpotiFLAC reconnect failed.", t.Exception.GetBaseException()) : Task.CompletedTask, TaskScheduler.Default);
+            _ = _spotiFlacServer.ConfigureAsync(integrations.SpotiFlacAddress, spotToken).ContinueWith(t =>
+            {
+                if (t.Exception is not null) AppLog.Warn("SpotiFLAC reconnect failed.", t.Exception.GetBaseException());
+            }, TaskScheduler.Default);
         _ = _discord.ConfigureAsync(integrations.DiscordEnabled, integrations.DiscordApplicationId, integrations.DiscordArtwork, _playback.CurrentTrack, false);
     }
 

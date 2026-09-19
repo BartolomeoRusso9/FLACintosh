@@ -8,6 +8,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Storage.Streams;
 using Windows.ApplicationModel.DataTransfer;
 using MusicPlayerWin.Core.Library;
+using MusicPlayerWin.Core.Playback;
 using MusicPlayerWin.App.Views;
 using MusicPlayerWin.App.Services;
 using WinRT.Interop;
@@ -111,7 +112,7 @@ public sealed partial class MainWindow : Window
 
     private void GlobalSearchBox_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
-        var query = args.Query?.Trim();
+        var query = args.QueryText?.Trim();
         if (string.IsNullOrWhiteSpace(query)) return;
         sender.ItemsSource = null;
         ContentFrame.Content = new SearchPage(query);
