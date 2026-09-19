@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace MusicPlayerWin.App;
 
-public partial class App : Application
+public partial class App : Microsoft.UI.Xaml.Application
 {
     public static AppServices Services { get; private set; } = null!;
 

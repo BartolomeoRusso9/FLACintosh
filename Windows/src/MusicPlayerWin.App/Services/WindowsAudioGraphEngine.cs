@@ -8,6 +8,7 @@ using Windows.Media.Playback;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using System.Security.Cryptography;
+using Timer = System.Threading.Timer;
 
 namespace MusicPlayerWin.App.Services;
 

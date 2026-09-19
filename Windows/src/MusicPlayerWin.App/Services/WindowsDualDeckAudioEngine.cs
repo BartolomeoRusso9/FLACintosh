@@ -1,6 +1,7 @@
 using MusicPlayerWin.Core.Audio;
 using Windows.Media;
 using Windows.Media.Playback;
+using Timer = System.Threading.Timer;
 
 namespace MusicPlayerWin.App.Services;
 

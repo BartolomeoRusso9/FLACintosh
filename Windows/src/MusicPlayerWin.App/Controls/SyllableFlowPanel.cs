@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Windows.Foundation;
+using Size = Windows.Foundation.Size;
 
 namespace MusicPlayerWin.App.Controls;
 

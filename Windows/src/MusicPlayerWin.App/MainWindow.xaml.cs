@@ -11,6 +11,7 @@ using MusicPlayerWin.Core.Library;
 using MusicPlayerWin.App.Views;
 using MusicPlayerWin.App.Services;
 using WinRT.Interop;
+using DragEventArgs = Microsoft.UI.Xaml.DragEventArgs;
 
 namespace MusicPlayerWin.App;
 
