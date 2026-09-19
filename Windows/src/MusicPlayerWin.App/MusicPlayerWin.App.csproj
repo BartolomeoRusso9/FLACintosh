@@ -10,6 +10,8 @@
     <PublishProfile>win-$(Platform).pubxml</PublishProfile>
     <UseWinUI>true</UseWinUI>
     <UseWindowsForms>true</UseWindowsForms>
+    <EnableDefaultApplicationDefinition>false</EnableDefaultApplicationDefinition>
+    <EnableDefaultPageItems>false</EnableDefaultPageItems>
     <EnableMsixTooling>false</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
