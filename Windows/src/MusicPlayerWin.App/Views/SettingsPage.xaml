@@ -1,0 +1,193 @@
+<Page
+    x:Class="MusicPlayerWin.App.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer Padding="32,28,32,110">
+        <StackPanel Spacing="22" MaxWidth="820">
+            <TextBlock Text="Settings" FontSize="34" FontWeight="SemiBold" />
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Library" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock x:Name="LibraryPath" Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="Stats" Foreground="{ThemeResource SubtleBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Choose folder and rescan" Click="Rescan_Click" />
+                        <Button Content="Refresh all sources" Click="RefreshSources_Click" />
+                    </StackPanel>
+                    <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="220"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Appearance" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="Follow Windows, or force a theme for the player." Foreground="{ThemeResource SubtleBrush}" FontSize="12" TextWrapping="Wrap"/></StackPanel><ComboBox x:Name="ThemeCombo" Grid.Column="1" Header="Theme" SelectionChanged="ThemeCombo_SelectionChanged"><ComboBoxItem Content="System"/><ComboBoxItem Content="Dark"/><ComboBoxItem Content="Light"/></ComboBox></Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="16">
+                    <TextBlock Text="Playback" FontSize="20" FontWeight="SemiBold" />
+                    <ToggleSwitch x:Name="AutoPlayToggle" Header="Auto play from library" Toggled="AutoPlay_Toggled" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Equalizer" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock Text="10-band processing is handled by the Windows AudioGraph backend." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <ToggleSwitch x:Name="EqualizerToggle" Grid.Column="1" Header="On" Toggled="Equalizer_Toggled" />
+                    </Grid>
+
+                    <ComboBox x:Name="PresetCombo" Header="Preset" SelectionChanged="PresetCombo_SelectionChanged" />
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0" Spacing="4"><TextBlock Text="32" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq0" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="0" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="64" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq1" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="1" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4"><TextBlock Text="125" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq2" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="2" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="3" Spacing="4"><TextBlock Text="250" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq3" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="3" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="4" Spacing="4"><TextBlock Text="500" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq4" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="4" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="5" Spacing="4"><TextBlock Text="1K" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq5" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="5" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="6" Spacing="4"><TextBlock Text="2K" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq6" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="6" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="7" Spacing="4"><TextBlock Text="4K" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq7" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="7" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="8" Spacing="4"><TextBlock Text="8K" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq8" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="8" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                        <StackPanel Grid.Column="9" Spacing="4"><TextBlock Text="16K" HorizontalAlignment="Center" FontSize="11" /><Slider x:Name="Eq9" Minimum="-12" Maximum="12" StepFrequency="0.5" Orientation="Vertical" Height="150" Tag="9" ValueChanged="EqBand_ValueChanged" /></StackPanel>
+                    </Grid>
+                    <TextBlock x:Name="EqHeadroom" Foreground="{ThemeResource SubtleBrush}" />
+                    <Grid ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="220" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <ToggleSwitch x:Name="GaplessToggle" Header="Gapless handoff" Toggled="Gapless_Toggled" />
+                            <TextBlock Text="Starts the prepared deck as soon as the current source completes. The Windows graph implementation is near-gapless rather than sample-accurate." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <ToggleSwitch x:Name="CrossfadeToggle" Header="Crossfade" Toggled="Crossfade_Toggled" />
+                            <Slider x:Name="CrossfadeSlider" Minimum="0.5" Maximum="12" StepFrequency="0.5" ValueChanged="CrossfadeSlider_ValueChanged" />
+                            <TextBlock x:Name="CrossfadeValue" HorizontalAlignment="Right" Foreground="{ThemeResource SubtleBrush}" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid ColumnSpacing="18">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="220" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="ReplayGain" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock Text="Apply track or album gain tags before output. A peak guard prevents metadata from pushing the signal above 0 dBFS." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <ComboBox x:Name="ReplayGainCombo" Header="Mode" SelectionChanged="ReplayGainCombo_SelectionChanged">
+                                <ComboBoxItem Content="Off" />
+                                <ComboBoxItem Content="Track" />
+                                <ComboBoxItem Content="Album" />
+                            </ComboBox>
+                            <Slider x:Name="ReplayGainPreampSlider" Minimum="-12" Maximum="12" StepFrequency="0.5" ValueChanged="ReplayGainPreamp_ValueChanged" />
+                            <TextBlock x:Name="ReplayGainPreampValue" HorizontalAlignment="Right" Foreground="{ThemeResource SubtleBrush}" FontSize="12" />
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Servers" FontSize="20" FontWeight="SemiBold" />
+                            <TextBlock Text="Jellyfin and Navidrome / Subsonic libraries are merged with the local library." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Add server" Click="AddServer_Click" />
+                    </Grid>
+                    <ListView x:Name="ServersList" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="10,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Address}" Foreground="{ThemeResource SubtleBrush}" />
+                                        <TextBlock Text="{Binding Kind}" Foreground="{ThemeResource SubtleBrush}" FontSize="12" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"><Button Content="Edit" Click="EditServer_Click" /><Button Content="Remove" Click="RemoveServer_Click" /></StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                    <TextBlock x:Name="NoServers" Text="No remote servers configured." Foreground="{ThemeResource SubtleBrush}" Visibility="Collapsed" />
+                    <TextBlock Text="Visible sources" FontSize="16" FontWeight="SemiBold" Margin="0,8,0,0" />
+                    <ListView x:Name="SourcesList" SelectionMode="None">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Padding="8">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <StackPanel><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Text="{Binding Detail}" Foreground="{ThemeResource SubtleBrush}" FontSize="12"/></StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsOn="{Binding IsVisible}" Tag="{Binding Key}" Toggled="SourceVisibility_Toggled"/>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Cache" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock x:Name="CacheSummary" Foreground="{ThemeResource SubtleBrush}" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Content="Clear remote cache" Click="ClearCache_Click" />
+                        <Button Content="Clear offline downloads" Click="ClearOffline_Click" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="14">
+                    <TextBlock Text="Integrations" FontSize="20" FontWeight="SemiBold" />
+                    <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Discord Rich Presence" FontWeight="SemiBold"/><TextBlock x:Name="DiscordStatus" Foreground="{ThemeResource SubtleBrush}"/></StackPanel><ToggleSwitch x:Name="DiscordToggle" Grid.Column="1" Toggled="Discord_Toggled"/></Grid>
+                    <TextBox x:Name="DiscordApplicationId" Header="Discord Application ID" PlaceholderText="Numeric application ID" />
+                    <ToggleSwitch x:Name="DiscordArtworkToggle" Header="Include public artwork lookup" Toggled="DiscordArtwork_Toggled" />
+                    <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Last.fm" FontWeight="SemiBold"/><ToggleSwitch x:Name="LastFmToggle" Header="Scrobble" Toggled="LastFm_Toggled"/><TextBox x:Name="LastFmApiKey" Header="API key"/><PasswordBox x:Name="LastFmSecret" Header="Shared secret"/></StackPanel><StackPanel Grid.Column="1"><TextBlock Text="Session key" FontWeight="SemiBold"/><PasswordBox x:Name="LastFmSession" PlaceholderText="Optional saved session key"/><StackPanel Orientation="Horizontal" Spacing="8"><Button Content="Authorize in browser" Click="LastFmAuthorize_Click"/><Button Content="Complete authorization" Click="LastFmComplete_Click"/></StackPanel><TextBlock x:Name="LastFmStatus" Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12"/><TextBlock Text="A valid Last.fm API key and shared secret are required. Authorization uses Last.fm's desktop token flow." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12"/></StackPanel></Grid>
+                    <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="ListenBrainz" FontWeight="SemiBold"/><ToggleSwitch x:Name="ListenBrainzToggle" Header="Submit listens" Toggled="ListenBrainz_Toggled"/><TextBox x:Name="ListenBrainzServer" Header="Server"/></StackPanel><StackPanel Grid.Column="1"><PasswordBox x:Name="ListenBrainzToken" Header="User token"/><TextBlock Text="Tokens are kept in Windows Credential Manager." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12"/></StackPanel></Grid>
+                    <StackPanel Spacing="8"><TextBlock Text="Windows / desktop" FontWeight="SemiBold"/><Button Content="Register audio file associations" Click="RegisterAssociations_Click" HorizontalAlignment="Left"/><TextBlock Text="Supports the common lossless/lossy formats handled by the library for Open With / double-click launching." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12"/></StackPanel>
+                    <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Start with Windows" FontWeight="SemiBold"/><TextBlock Text="Launch MusicPlayerWin when you sign in." Foreground="{ThemeResource SubtleBrush}" FontSize="12"/></StackPanel><ToggleSwitch x:Name="StartupToggle" Grid.Column="1" Toggled="Startup_Toggled"/></Grid>
+                    <Grid ColumnSpacing="12"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Minimize to tray" FontWeight="SemiBold"/><TextBlock Text="Closing the main window hides the player while the tray icon stays available." Foreground="{ThemeResource SubtleBrush}" FontSize="12" TextWrapping="Wrap"/></StackPanel><ToggleSwitch x:Name="TrayToggle" Grid.Column="1" Toggled="Tray_Toggled"/></Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Diagnostics" FontSize="20" FontWeight="SemiBold" />
+                    <ListView x:Name="HealthList" SelectionMode="None"><ListView.ItemTemplate><DataTemplate><Grid Padding="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="2*"/></Grid.ColumnDefinitions><TextBlock Text="{Binding Name}" FontWeight="SemiBold"/><TextBlock Grid.Column="1" Text="{Binding Detail}" Foreground="{ThemeResource SubtleBrush}"/></Grid></DataTemplate></ListView.ItemTemplate></ListView>
+                    <Button Content="Open log folder" Click="OpenLogs_Click" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Google Cast" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="Connect to a Chromecast / Cast receiver by local address. The receiver must be able to reach a network URL; local file paths are not directly streamable to Cast." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" />
+                    <Grid ColumnSpacing="10"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="120"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="CastHost" Header="Device address" PlaceholderText="192.168.1.50"/><NumberBox x:Name="CastPort" Grid.Column="1" Header="Port" Value="8009" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Compact"/><Button Grid.Column="2" Content="Connect" Click="CastConnect_Click" VerticalAlignment="Bottom"/></Grid>
+                    <StackPanel Orientation="Horizontal" Spacing="8"><Button Content="Discover" Click="CastDiscover_Click"/><Button Content="Cast current" Click="CastCurrent_Click"/><Button Content="Play" Click="CastPlay_Click"/><Button Content="Pause" Click="CastPause_Click"/><Button Content="Stop" Click="CastStop_Click"/></StackPanel>
+                    <TextBlock x:Name="CastStatus" Foreground="{ThemeResource SubtleBrush}"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="20">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="MusicPlayerWin" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="Windows counterpart of FLACintosh. Core logic stays independent from WinUI where possible." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

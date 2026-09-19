@@ -1,0 +1,76 @@
+name: Release
+
+# Builds the Windows x64 release ZIP and, for a tag push, publishes it as a
+# GitHub Release. This mirrors the structure of the macOS release workflow, but
+# swaps the DMG packaging step for the Windows EXE packaging script.
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build (e.g. 0.8.0) — no leading v"
+        required: true
+        default: "0.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show toolchain
+        shell: pwsh
+        run: |
+          dotnet --info
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}"
+          } else {
+            $version = "${{ github.ref_name }}".TrimStart("v")
+          }
+
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+          key: nuget-${{ hashFiles('**/*.csproj', '**/packages.lock.json') }}
+          restore-keys: nuget-
+
+      - name: Build MusicPlayerWin.exe package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          BUILD_NUMBER: ${{ github.run_number }}
+        shell: pwsh
+        run: |
+          ./scripts/package-win-exe.ps1 -Version "${{ steps.version.outputs.version }}"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicPlayerWin-${{ steps.version.outputs.version }}
+          path: dist/MusicPlayerWin-*.zip
+          if-no-files-found: error
+
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/MusicPlayerWin-*.zip
+          generate_release_notes: true
+          body: |
+            Windows x64 build packaged as a ZIP.
+
+            Extract the archive and run the EXE from the published output folder.

@@ -1,0 +1,60 @@
+<Page
+    x:Class="MusicPlayerWin.App.Views.SearchPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer Padding="32,28,32,120">
+        <StackPanel Spacing="26">
+            <TextBlock x:Name="Heading" FontSize="34" FontWeight="SemiBold" />
+
+            <StackPanel Spacing="10">
+                <TextBlock Text="Songs" FontSize="22" FontWeight="SemiBold" />
+                <ListView x:Name="SongsList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="Song_ItemClick">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="12,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="1.2*" />
+                                    <ColumnDefinition Width="1.2*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1" Text="{Binding Artist}" Foreground="{ThemeResource SubtleBrush}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="2" Text="{Binding Album}" Foreground="{ThemeResource SubtleBrush}" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+                <TextBlock Text="Albums" FontSize="22" FontWeight="SemiBold" />
+                <ListView x:Name="AlbumsList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="Album_ItemClick">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Padding="12,8">
+                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Artist}" Foreground="{ThemeResource SubtleBrush}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+
+            <StackPanel Spacing="10">
+                <TextBlock Text="Artists" FontSize="22" FontWeight="SemiBold" />
+                <ListView x:Name="ArtistsList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="Artist_ItemClick">
+                    <ListView.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Padding="12,8">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding TrackCount}" Foreground="{ThemeResource SubtleBrush}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </StackPanel>
+
+            <TextBlock x:Name="EmptyState" Text="No results." Foreground="{ThemeResource SubtleBrush}" Visibility="Collapsed" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

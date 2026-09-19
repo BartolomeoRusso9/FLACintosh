@@ -1,0 +1,20 @@
+<Page
+    x:Class="MusicPlayerWin.App.Views.SpotiFlacPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Padding="32,28,32,110">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+        <Grid Margin="0,0,0,16">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+            <StackPanel><TextBlock Text="SpotiFLAC" FontSize="34" FontWeight="SemiBold"/><TextBlock x:Name="Status" Foreground="{ThemeResource SubtleBrush}"/></StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"><Button Content="Configure server" Click="Configure_Click"/><Button Content="Check CLI update" Click="CheckUpdate_Click"/><Button Content="Open local TUI" Click="OpenTui_Click"/></StackPanel>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+            <Grid ColumnSpacing="8"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBox x:Name="Query" PlaceholderText="Search Spotify..." KeyDown="Query_KeyDown"/><Button Grid.Column="1" Content="Search" Click="Search_Click"/></Grid>
+            <ListView x:Name="Results" Grid.Row="1" Margin="0,12,0,0" SelectionMode="None" IsItemClickEnabled="True" ItemClick="Result_Click">
+                <ListView.ItemTemplate><DataTemplate><Grid Padding="12,9"><Grid.ColumnDefinitions><ColumnDefinition Width="90"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><Border Width="72" Height="72" Background="#2A2A2D"/><StackPanel Grid.Column="1"><TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold"/><TextBlock Text="{Binding Subtitle}" Foreground="{ThemeResource SubtleBrush}"/><TextBlock Text="{Binding Kind}" Foreground="{ThemeResource SubtleBrush}" FontSize="12"/></StackPanel><Button Grid.Column="2" Content="Download" Tag="{Binding}" Click="Download_Click"/></Grid></DataTemplate></ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+    </Grid>
+</Page>

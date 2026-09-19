@@ -1,0 +1,38 @@
+<Application
+    x:Class="MusicPlayerWin.App.App"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Default">
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#0F0F10" />
+                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#171719" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#222225" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#FA233B" />
+                    <SolidColorBrush x:Key="SubtleBrush" Color="#A6A6AA" />
+                    <SolidColorBrush x:Key="DividerBrush" Color="#29292C" />
+                    <SolidColorBrush x:Key="PlaceholderBrush" Color="#303035" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#0F0F10" />
+                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#171719" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#222225" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#FA233B" />
+                    <SolidColorBrush x:Key="SubtleBrush" Color="#A6A6AA" />
+                    <SolidColorBrush x:Key="DividerBrush" Color="#29292C" />
+                    <SolidColorBrush x:Key="PlaceholderBrush" Color="#303035" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F7F7F8" />
+                    <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#ECECEF" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#D91E36" />
+                    <SolidColorBrush x:Key="SubtleBrush" Color="#66666E" />
+                    <SolidColorBrush x:Key="DividerBrush" Color="#D6D6DA" />
+                    <SolidColorBrush x:Key="PlaceholderBrush" Color="#DDDEE2" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

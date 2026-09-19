@@ -1,0 +1,27 @@
+<Page
+    x:Class="MusicPlayerWin.App.Views.ArtistsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Padding="32,28,32,110">
+        <StackPanel Spacing="18">
+            <TextBlock Text="Artists" FontSize="34" FontWeight="SemiBold" />
+            <ListView x:Name="ArtistsList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="ArtistsList_ItemClick">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Grid Padding="14,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding Name}" FontSize="16" />
+                            <TextBlock Text="{Binding Albums.Count, FallbackValue=0}" Grid.Column="1" Foreground="{ThemeResource SubtleBrush}" />
+                            <TextBlock Text="{Binding TrackCount}" Grid.Column="2" Foreground="{ThemeResource SubtleBrush}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <TextBlock x:Name="EmptyState" Text="No artists in the current library." Foreground="{ThemeResource SubtleBrush}" Visibility="Collapsed" />
+        </StackPanel>
+    </Grid>
+</Page>
