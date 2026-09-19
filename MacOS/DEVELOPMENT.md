@@ -1,7 +1,7 @@
 # FLACintosh — development
 
 Notes for building, packaging and working on FLACintosh. What the app does and
-how to use it is in the [README](README.md).
+how to use it is in the [README](../README.md).
 
 ## Running from source
 

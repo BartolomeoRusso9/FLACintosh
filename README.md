@@ -4,7 +4,7 @@
 
 # FLACintosh
 
-**A music player for your own lossless library, with lyrics that light up word by word.**
+**A cross-platform music player for your own lossless library, with lyrics that light up word by word.**
 
 [![Latest release](https://img.shields.io/github/v/release/BartolomeoRusso9/FLACintosh?style=flat-square&color=FF0436&label=release)](https://github.com/BartolomeoRusso9/FLACintosh/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/BartolomeoRusso9/FLACintosh/total?style=flat-square&color=FF4E6B)](https://github.com/BartolomeoRusso9/FLACintosh/releases)
@@ -22,13 +22,18 @@
 
 ---
 
-FLACintosh plays the music you own — FLAC, ALAC and every other format —
-from a folder on your Mac or from your own Jellyfin or Navidrome server. It
-looks and feels like Apple Music, and it does the one thing Apple Music and
-Spotify will not do for your files: show **synchronised lyrics that follow
-the singer syllable by syllable**.
+FLACintosh plays the music you own — FLAC, ALAC and every other format — from
+a local folder or from your own Jellyfin or Navidrome server. It looks and
+feels like Apple Music, and it does the one thing Apple Music and Spotify will
+not do for your files: show **synchronised lyrics that follow the singer
+syllable by syllable**.
 
-A native Mac app written in SwiftUI — no Electron, no web view, no account.
+The macOS app is written in SwiftUI; the Windows counterpart uses .NET 8 and
+WinUI 3. Neither version uses Electron, a web view or an account.
+
+The repository is organized by platform: the macOS implementation lives in
+[`MacOS/`](MacOS/), while the Windows counterpart lives in
+[`Windows/`](Windows/).
 
 ## Why FLACintosh?
 
@@ -72,10 +77,12 @@ A native Mac app written in SwiftUI — no Electron, no web view, no account.
 - **Recap.** Your own Wrapped: minutes listened, top songs, artists and
   albums, when you listen and your longest streak.
 - **Scrobbling** to Last.fm and ListenBrainz.
-- **Menu bar player** with the current lyric line.
+- **Desktop controls.** A menu bar player with the current lyric line on
+  macOS, and system tray controls on Windows.
 - **Discord.** Show what you are listening to on your Discord profile.
-- **Works with your Mac.** Control Center, the menu bar, your keyboard's
-  media keys and AirPods controls all work.
+- **Works with your desktop.** Control Center, the menu bar, keyboard media
+  keys and AirPods controls work on macOS; Windows provides media keys,
+  timeline controls and a system tray.
 - **Download music (optional).** Search Spotify and download in lossless
   quality through [SpotiFLAC](https://github.com/BartolomeoRusso9/SpotiFLAC-Module-Version).
 - **Edit tags** — title, artist, album and more — with **Get Info…**.
@@ -377,7 +384,7 @@ Ideas for what comes next — suggestions are welcome in
 - [x] Last.fm / ListenBrainz scrobbling
 - [x] Offline downloads of server music
 - [x] Menu bar mini player
-- [ ] Desktop and Notification Center widget
+- [ ] macOS desktop and Notification Center widget
 - [ ] Localisation
 
 ## Feedback and contributing
@@ -403,7 +410,16 @@ Jellyfin, Navidrome) and the file format. Pull requests are welcome; see
 
 ## Building from source
 
-See [MacOS/DEVELOPMENT.md](MacOS/DEVELOPMENT.md).
+### macOS
+
+See [MacOS/DEVELOPMENT.md](MacOS/DEVELOPMENT.md) for running the app,
+packaging releases and working on the Swift sources.
+
+### Windows
+
+See [Windows/README.md](Windows/README.md) for the Windows implementation and
+[Windows/BUILD-WINDOWS.md](Windows/BUILD-WINDOWS.md) for build and test
+commands.
 
 ## License
 
