@@ -10,7 +10,7 @@ python scripts/static-verify.py
 ./scripts/publish-win-x64.ps1
 ```ok
 
-The published application is self-contained. The output directory is `artifacts/win-x64`.
+The published application is self-contained and generates a runnable Windows EXE in `artifacts/win-x64`. The generated app host is copied to `FLACintosh.exe` for easier launch and distribution.
 
 For ARM64:
 

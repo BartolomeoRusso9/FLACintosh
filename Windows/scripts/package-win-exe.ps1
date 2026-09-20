@@ -8,22 +8,20 @@ $ErrorActionPreference = 'Stop'
 $Version = $Version -replace '^[vV]', ''
 
 $root = Split-Path -Parent $PSScriptRoot
-$dist = Join-Path $root 'dist'
 $artifactDir = Join-Path $root $Output
-$zipPath = Join-Path $dist "MusicPlayerWin-$Version-win-x64.zip"
+$exePath = Join-Path $artifactDir 'FLACintosh.exe'
 
-Write-Host "==> Publishing Windows x64 build"
+Write-Host "==> Publishing Windows x64 EXE build"
 & (Join-Path $root 'scripts\publish-win-x64.ps1') -Configuration $Configuration -Output $Output
 
 if (-not (Test-Path $artifactDir)) {
     throw "Expected build output at $artifactDir but it was not created."
 }
 
-New-Item -ItemType Directory -Path $dist -Force | Out-Null
-if (Test-Path $zipPath) {
-    Remove-Item $zipPath -Force
+$sourceExe = Join-Path $artifactDir 'FLACintosh.exe'
+if (-not (Test-Path $sourceExe)) {
+    throw "Expected EXE at $sourceExe but it was not created."
 }
 
-Compress-Archive -Path (Join-Path $artifactDir '*') -DestinationPath $zipPath -Force
-
-Write-Host "==> ZIP created: $zipPath"
+Copy-Item $sourceExe $exePath -Force
+Write-Host "==> EXE created: $exePath"
