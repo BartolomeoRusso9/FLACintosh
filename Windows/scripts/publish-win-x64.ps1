@@ -17,6 +17,7 @@ dotnet publish $project `
     --self-contained true `
     -p:PublishSingleFile=true `
     -p:UseAppHost=true `
+    -p:EnableMsixTooling=true `
     -o $outputDir
 
 if ($LASTEXITCODE -ne 0) {
