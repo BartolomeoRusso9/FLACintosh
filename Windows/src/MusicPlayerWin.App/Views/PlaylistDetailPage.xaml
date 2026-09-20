@@ -11,7 +11,7 @@
                 <TextBlock x:Name="Summary" Foreground="{ThemeResource SubtleBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                <Button Content="Play" Click="Play_Click"/>
+                <Button Content="Play" Click="Play_Click" Style="{StaticResource AccentButtonStyle}"/>
                 <Button Content="Add current queue" Click="AddQueue_Click"/>
                 <Button Content="Rename" Click="Rename_Click"/>
                 <Button Content="Delete" Click="Delete_Click"/>

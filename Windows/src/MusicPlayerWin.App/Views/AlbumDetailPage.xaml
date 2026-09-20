@@ -16,7 +16,7 @@
                     <TextBlock x:Name="Artist" FontSize="20" Foreground="{ThemeResource SubtleBrush}" />
                     <TextBlock x:Name="Meta" Foreground="{ThemeResource SubtleBrush}" />
                     <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,12,0,0">
-                        <Button Content="Play" Click="Play_Click" />
+                        <Button Content="Play" Click="Play_Click" Style="{StaticResource AccentButtonStyle}" />
                         <Button Content="Shuffle" Click="Shuffle_Click" />
                         <Button Content="Download offline" Click="Download_Click" />
                     </StackPanel>

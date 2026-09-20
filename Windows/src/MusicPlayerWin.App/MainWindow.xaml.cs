@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.UI.Windowing;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -19,9 +20,11 @@ namespace MusicPlayerWin.App;
 public sealed partial class MainWindow : Window
 {
     private readonly DispatcherQueueTimer _timer;
-    private bool _changingSlider;
     private bool _changingVolume;
     private readonly TrayService _tray;
+
+    /// <summary>The Apple Music brand red (Palette.red on macOS), hardcoded so it doesn't depend on ThemeDictionaries resource lookup from code-behind.</summary>
+    private static readonly SolidColorBrush AccentBrush = new(Microsoft.UI.ColorHelper.FromArgb(0xFF, 0xFF, 0x04, 0x36));
 
     internal async Task ShowFirstRunAsync()
     {
@@ -168,11 +171,7 @@ public sealed partial class MainWindow : Window
         RefreshTransport();
     }
 
-    private void ProgressSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {
-        if (_changingSlider) return;
-        App.Services.Playback.Seek(e.NewValue);
-    }
+    private void ProgressScrubber_Seeked(object? sender, double newValue) => App.Services.Playback.Seek(newValue);
 
     private void ServicesOnChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() => { ApplyTheme(); RefreshTransport(); });
 
@@ -183,21 +182,24 @@ public sealed partial class MainWindow : Window
 
         NowTitle.Text = track?.Title ?? "Nothing playing";
         NowArtist.Text = track?.Artist ?? "";
-        PlayPauseButton.Content = state.IsPlaying ? "Pause" : "Play";
+        PlayIcon.Visibility = state.IsPlaying ? Visibility.Collapsed : Visibility.Visible;
+        PauseIcon.Visibility = state.IsPlaying ? Visibility.Visible : Visibility.Collapsed;
+        ToolTipService.SetToolTip(PlayPauseButton, state.IsPlaying ? "Pause" : "Play");
         _ = LoadTransportArtworkAsync(track);
 
-        _changingSlider = true;
-        ProgressSlider.Maximum = Math.Max(1, state.Duration);
-        ProgressSlider.Value = Math.Clamp(state.Position, 0, ProgressSlider.Maximum);
+        ProgressScrubber.SetPosition(state.Position, state.Duration);
         ElapsedText.Text = FormatTime(state.Position);
         DurationText.Text = FormatTime(state.Duration);
-        _changingSlider = false;
 
         _changingVolume = true;
         VolumeSlider.Value = Math.Clamp(state.Volume, 0, 1);
         _changingVolume = false;
-        ShuffleButton.Content = App.Services.Playback.Queue.IsShuffling ? "Shuffle On" : "Shuffle";
-        RepeatButton.Content = $"Repeat {App.Services.Playback.Queue.RepeatMode}";
+        var isShuffling = App.Services.Playback.Queue.IsShuffling;
+        var repeatMode = App.Services.Playback.Queue.RepeatMode;
+        ToolTipService.SetToolTip(ShuffleButton, isShuffling ? "Shuffle On" : "Shuffle");
+        ToolTipService.SetToolTip(RepeatButton, $"Repeat {repeatMode}");
+        if (isShuffling) ShuffleIcon.Foreground = AccentBrush; else ShuffleIcon.ClearValue(IconElement.ForegroundProperty);
+        if (repeatMode.ToString() != "Off") RepeatIcon.Foreground = AccentBrush; else RepeatIcon.ClearValue(IconElement.ForegroundProperty);
 
         var hasLyrics = track?.HasLyrics == true;
         ToolTipService.SetToolTip(LyricsButton, hasLyrics ? "Lyrics" : "No lyrics for this track");
@@ -258,7 +260,42 @@ public sealed partial class MainWindow : Window
 
     private void Lyrics_Click(object sender, RoutedEventArgs e) => ContentFrame.Content = new NowPlayingPage();
 
-    private void Cast_Click(object sender, RoutedEventArgs e) => ContentFrame.Content = new SettingsPage();
+    private sealed record CastDeviceRow(CastDevice Device, bool Active)
+    {
+        public string Name => Device.Name;
+        public string Detail => Device.Model ?? $"{Device.Host}:{Device.Port}";
+        public Visibility CheckVisibility => Active ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private async void CastFlyout_Opening(object? sender, object e)
+    {
+        CastDevicesList.ItemsSource = null;
+        CastDiscoveringRing.IsActive = true;
+        try
+        {
+            var devices = await App.Services.CastDiscovery.DiscoverAsync();
+            CastDevicesList.ItemsSource = devices
+                .Select(d => new CastDeviceRow(d, App.Services.Cast.Connected && string.Equals(App.Services.Cast.ReceiverHost, d.Host, StringComparison.OrdinalIgnoreCase)))
+                .ToArray();
+        }
+        catch (Exception ex) { AppLog.Warn("Cast discovery failed.", ex); }
+        finally { CastDiscoveringRing.IsActive = false; }
+    }
+
+    private async void CastDevice_ItemClick(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not CastDeviceRow row) return;
+        CastFlyout.Hide();
+        try { await App.Services.Cast.ConnectAsync(row.Device.Host, row.Device.Port); RefreshTransport(); }
+        catch (Exception ex) { AppLog.Warn("Cast connect failed.", ex); }
+    }
+
+    private async void CastStopDevice_Click(object sender, RoutedEventArgs e)
+    {
+        CastFlyout.Hide();
+        try { await App.Services.Cast.StopAsync(); RefreshTransport(); }
+        catch (Exception ex) { AppLog.Warn("Cast stop failed.", ex); }
+    }
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {

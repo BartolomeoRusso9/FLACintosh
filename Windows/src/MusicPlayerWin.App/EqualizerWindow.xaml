@@ -1,0 +1,61 @@
+<Window
+    x:Class="MusicPlayerWin.App.EqualizerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MusicPlayerWin.App.Controls"
+    Title="Equalizer">
+    <ScrollViewer Padding="22" Background="{ThemeResource WindowBackgroundBrush}">
+        <StackPanel Spacing="18" MaxWidth="620">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Equalizer" FontSize="20" FontWeight="SemiBold" />
+                <ToggleSwitch x:Name="EqualizerToggle" Grid.Column="1" Header="On" Toggled="Equalizer_Toggled" />
+            </Grid>
+
+            <ComboBox x:Name="PresetCombo" Header="Preset" SelectionChanged="PresetCombo_SelectionChanged" />
+
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" /> <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq0" Height="180" Tag="0" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="32" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq1" Height="180" Tag="1" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="64" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="2" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq2" Height="180" Tag="2" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="125" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="3" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq3" Height="180" Tag="3" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="250" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="4" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq4" Height="180" Tag="4" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="500" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="5" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq5" Height="180" Tag="5" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="1K" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="6" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq6" Height="180" Tag="6" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="2K" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="7" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq7" Height="180" Tag="7" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="4K" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="8" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq8" Height="180" Tag="8" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="8K" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+                <StackPanel Grid.Column="9" Spacing="6" HorizontalAlignment="Center"><controls:VerticalGainSlider x:Name="Eq9" Height="180" Tag="9" ValueChanged="EqBand_ValueChanged" /><TextBlock Text="16K" HorizontalAlignment="Center" FontSize="10" Foreground="{ThemeResource SubtleBrush}" /></StackPanel>
+            </Grid>
+            <TextBlock x:Name="EqHeadroom" Foreground="{ThemeResource SubtleBrush}" />
+
+            <Grid ColumnSpacing="18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="220" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="ReplayGain" FontSize="16" FontWeight="SemiBold" />
+                    <TextBlock Text="Evens out loudness between songs using the ReplayGain tags in your files." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="12" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                    <ComboBox x:Name="ReplayGainCombo" Header="Mode" SelectionChanged="ReplayGainCombo_SelectionChanged">
+                        <ComboBoxItem Content="Off" />
+                        <ComboBoxItem Content="Track" />
+                        <ComboBoxItem Content="Album" />
+                    </ComboBox>
+                    <Slider x:Name="ReplayGainPreampSlider" Minimum="-12" Maximum="12" StepFrequency="0.5" ValueChanged="ReplayGainPreamp_ValueChanged" />
+                    <TextBlock x:Name="ReplayGainPreampValue" HorizontalAlignment="Right" Foreground="{ThemeResource SubtleBrush}" FontSize="12" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="The equalizer and ReplayGain apply to everything played on this PC, from a folder or a server. Cast devices play the file themselves, so they are not affected." Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap" FontSize="11" />
+        </StackPanel>
+    </ScrollViewer>
+</Window>

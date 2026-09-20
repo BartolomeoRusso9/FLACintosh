@@ -5,6 +5,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:views="using:MusicPlayerWin.App.Views"
+    xmlns:controls="using:MusicPlayerWin.App.Controls"
     mc:Ignorable="d"
     Title="MusicPlayerWin">
     <Grid x:Name="RootGrid" Background="{ThemeResource WindowBackgroundBrush}" AllowDrop="True" DragOver="RootGrid_DragOver" Drop="RootGrid_Drop">
@@ -37,7 +38,16 @@
 
         <InfoBar x:Name="GlobalErrorBar" IsOpen="False" IsClosable="True" Severity="Error" MaxWidth="760" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="16,12,16,0" />
 
-        <Border VerticalAlignment="Bottom" Background="{ThemeResource PanelBackgroundBrush}" Padding="16,10" BorderBrush="{ThemeResource DividerBrush}" BorderThickness="1,1,1,0">
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch" Height="64" CornerRadius="32" Padding="24,0" Margin="12,0,12,10" BorderThickness="1" Translation="0,0,24">
+            <Border.Background>
+                <AcrylicBrush TintColor="{ThemeResource TransportCapsuleTintColor}" TintOpacity="0.8" FallbackColor="{ThemeResource TransportCapsuleTintColor}" />
+            </Border.Background>
+            <Border.BorderBrush>
+                <SolidColorBrush Color="{ThemeResource SystemBaseLowColor}" Opacity="0.6" />
+            </Border.BorderBrush>
+            <Border.Shadow>
+                <ThemeShadow />
+            </Border.Shadow>
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="2*" />
@@ -53,26 +63,69 @@
                             <TextBlock x:Name="NowTitle" Text="Nothing playing" TextTrimming="CharacterEllipsis" />
                             <StackPanel Orientation="Horizontal" Spacing="6">
                                 <TextBlock x:Name="NowArtist" Foreground="{ThemeResource SubtleBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="NowCastDevice" Foreground="#E5484D" FontSize="12" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
+                                <TextBlock x:Name="NowCastDevice" Foreground="{ThemeResource AccentBrush}" FontSize="12" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
                             </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </Button>
 
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
-                    <Button Content="Previous" Click="Previous_Click" />
-                    <Button x:Name="PlayPauseButton" Content="Play" Click="PlayPause_Click" />
-                    <Button Content="Next" Click="Next_Click" />
-                    <Button x:Name="ShuffleButton" Content="Shuffle" Click="Shuffle_Click" />
-                    <Button x:Name="RepeatButton" Content="Repeat Off" Click="Repeat_Click" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                    <Button Click="Previous_Click" ToolTipService.ToolTip="Previous" Background="Transparent" BorderThickness="0" Padding="6">
+                        <Path Width="16" Height="16" Stretch="Uniform" Fill="{ThemeResource SubtleBrush}" Data="M1,1 L3,1 L3,15 L1,15 Z M14,1 L14,15 L4,8 Z" />
+                    </Button>
+                    <Button x:Name="PlayPauseButton" Click="PlayPause_Click" ToolTipService.ToolTip="Play" Background="Transparent" BorderThickness="0" Padding="9" CornerRadius="20">
+                        <Grid Width="18" Height="18">
+                            <Path x:Name="PlayIcon" Stretch="Uniform" Fill="White" Data="M2,1 L14,8 L2,15 Z" />
+                            <Path x:Name="PauseIcon" Stretch="Uniform" Fill="White" Data="M3,1 L6,1 L6,15 L3,15 Z M10,1 L13,1 L13,15 L10,15 Z" Visibility="Collapsed" />
+                        </Grid>
+                    </Button>
+                    <Button Click="Next_Click" ToolTipService.ToolTip="Next" Background="Transparent" BorderThickness="0" Padding="6">
+                        <Path Width="16" Height="16" Stretch="Uniform" Fill="{ThemeResource SubtleBrush}" Data="M2,1 L2,15 L12,8 Z M13,1 L15,1 L15,15 L13,15 Z" />
+                    </Button>
+                    <Button x:Name="ShuffleButton" Click="Shuffle_Click" ToolTipService.ToolTip="Shuffle" Background="Transparent" BorderThickness="0" Padding="6">
+                        <FontIcon x:Name="ShuffleIcon" Glyph="&#xE8B1;" FontSize="15" Foreground="{ThemeResource SubtleBrush}" />
+                    </Button>
+                    <Button x:Name="RepeatButton" Click="Repeat_Click" ToolTipService.ToolTip="Repeat Off" Background="Transparent" BorderThickness="0" Padding="6">
+                        <FontIcon x:Name="RepeatIcon" Glyph="&#xE8EE;" FontSize="15" Foreground="{ThemeResource SubtleBrush}" />
+                    </Button>
                     <Button x:Name="LyricsButton" Content="Lyrics" Click="Lyrics_Click" ToolTipService.ToolTip="No lyrics for this track" />
-                    <Button x:Name="CastButton" Content="Cast" Click="Cast_Click" ToolTipService.ToolTip="Cast" />
+                    <Button x:Name="CastButton" Content="Cast" ToolTipService.ToolTip="Cast">
+                        <Button.Flyout>
+                            <Flyout x:Name="CastFlyout" Opening="CastFlyout_Opening">
+                                <StackPanel Spacing="4" Width="240">
+                                    <TextBlock Text="Play On" FontSize="11" FontWeight="SemiBold" Foreground="{ThemeResource SubtleBrush}" />
+                                    <Button Content="This Mac" Click="CastStopDevice_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left" Background="Transparent" BorderThickness="0" />
+                                    <ProgressRing x:Name="CastDiscoveringRing" IsActive="False" Width="16" Height="16" HorizontalAlignment="Left" Margin="8,4" />
+                                    <ListView x:Name="CastDevicesList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="CastDevice_ItemClick" MaxHeight="220">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="8" Padding="4">
+                                                    <FontIcon Glyph="&#xE73E;" FontSize="12" Visibility="{Binding CheckVisibility}" Foreground="{ThemeResource AccentBrush}" />
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding Name}" FontSize="13" />
+                                                        <TextBlock Text="{Binding Detail}" FontSize="10" Foreground="{ThemeResource SubtleBrush}" />
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                     <Button Content="Queue" Click="Queue_Click" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center" Margin="18,0,0,0">
-                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"><TextBlock x:Name="ElapsedText" Width="42" TextAlignment="Right" FontSize="11" Foreground="{ThemeResource SubtleBrush}"/><Slider x:Name="ProgressSlider" Width="210" Minimum="0" Maximum="1" ValueChanged="ProgressSlider_ValueChanged"/><TextBlock x:Name="DurationText" Width="42" FontSize="11" Foreground="{ThemeResource SubtleBrush}"/></StackPanel>
-                    <Slider x:Name="VolumeSlider" Width="110" Minimum="0" Maximum="1" Value="1" ValueChanged="VolumeSlider_ValueChanged" />
+                    <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center"><TextBlock x:Name="ElapsedText" Width="42" TextAlignment="Right" FontSize="11" Foreground="{ThemeResource SubtleBrush}"/><controls:Scrubber x:Name="ProgressScrubber" Width="210" Seeked="ProgressScrubber_Seeked"/><TextBlock x:Name="DurationText" Width="42" FontSize="11" Foreground="{ThemeResource SubtleBrush}"/></StackPanel>
+                    <Slider x:Name="VolumeSlider" Width="110" Minimum="0" Maximum="1" Value="1" ValueChanged="VolumeSlider_ValueChanged">
+                        <Slider.Resources>
+                            <SolidColorBrush x:Key="SliderTrackValueFill" Color="{ThemeResource PinkBrush}" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPointerOver" Color="{ThemeResource PinkBrush}" />
+                            <SolidColorBrush x:Key="SliderTrackValueFillPressed" Color="{ThemeResource PinkBrush}" />
+                            <SolidColorBrush x:Key="SliderThumbBackground" Color="{ThemeResource PinkBrush}" />
+                        </Slider.Resources>
+                    </Slider>
                 </StackPanel>
             </Grid>
         </Border>

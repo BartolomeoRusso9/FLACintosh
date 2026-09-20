@@ -1,7 +1,8 @@
 <Page
     x:Class="MusicPlayerWin.App.Views.AlbumsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MusicPlayerWin.App.Controls">
     <ScrollViewer Padding="32,28,32,110">
         <StackPanel Spacing="18">
             <TextBlock Text="Albums" FontSize="34" FontWeight="SemiBold" />
@@ -20,7 +21,10 @@
                                 </Border>
                                 <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                 <TextBlock Text="{Binding Artist}" Foreground="{ThemeResource SubtleBrush}" TextTrimming="CharacterEllipsis" />
-                                <TextBlock Text="{Binding Tracks.Count, FallbackValue=0}" Foreground="{ThemeResource SubtleBrush}" FontSize="12" />
+                                <StackPanel Orientation="Horizontal" Spacing="6">
+                                    <TextBlock Text="{Binding Tracks.Count, FallbackValue=0}" Foreground="{ThemeResource SubtleBrush}" FontSize="12" VerticalAlignment="Center" />
+                                    <controls:SourceBadge Source="{Binding Source}" />
+                                </StackPanel>
                                 <Button Content="Download offline" Click="Download_Click" />
                             </StackPanel>
                         </Border>

@@ -18,16 +18,16 @@
                 <TextBlock x:Name="Summary" Foreground="{ThemeResource SubtleBrush}" />
             </StackPanel>
 
-            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="18" Padding="24">
+            <Border x:Name="HeroCard" Background="{ThemeResource BrandGradientBrush}" CornerRadius="18" Padding="24" MinHeight="150">
                 <StackPanel Spacing="4">
-                    <TextBlock x:Name="HeroSubtitle" FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource SubtleBrush}" />
-                    <TextBlock x:Name="HeroMinutes" FontSize="48" FontWeight="Bold" />
-                    <TextBlock Text="minutes listened" FontSize="15" FontWeight="SemiBold" />
-                    <TextBlock x:Name="HeroCounts" FontSize="12" Foreground="{ThemeResource SubtleBrush}" Margin="0,4,0,0" />
+                    <TextBlock x:Name="HeroSubtitle" FontSize="13" FontWeight="SemiBold" Foreground="#D9FFFFFF" />
+                    <TextBlock x:Name="HeroMinutes" FontSize="48" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="minutes listened" FontSize="15" FontWeight="SemiBold" Foreground="#E6FFFFFF" />
+                    <TextBlock x:Name="HeroCounts" FontSize="12" Foreground="#BFFFFFFF" Margin="0,4,0,0" />
                 </StackPanel>
             </Border>
 
-            <Grid ColumnSpacing="18">
+            <Grid x:Name="StreakBusiestGrid" ColumnSpacing="18">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -40,7 +40,7 @@
                 </Border>
             </Grid>
 
-            <Grid ColumnSpacing="18">
+            <Grid x:Name="TopListsGrid" ColumnSpacing="18">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
@@ -74,7 +74,7 @@
                 </Border>
             </Grid>
 
-            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
+            <Border x:Name="HourlyClockCard" Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
                 <StackPanel Spacing="10">
                     <TextBlock Text="When you listen" FontSize="20" FontWeight="SemiBold" />
                     <StackPanel x:Name="HourlyClock" Orientation="Horizontal" Height="110" VerticalAlignment="Bottom" />

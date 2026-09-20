@@ -11,7 +11,7 @@
 
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button x:Name="ChooseFolderButton" Content="Choose music folder" Click="ChooseFolderButton_Click" />
-                <Button Content="Play all" Click="PlayAllButton_Click" />
+                <Button Content="Play all" Click="PlayAllButton_Click" Style="{StaticResource AccentButtonStyle}" />
             </StackPanel>
 
             <StackPanel Spacing="10">

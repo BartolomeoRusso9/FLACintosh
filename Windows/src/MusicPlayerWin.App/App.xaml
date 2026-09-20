@@ -9,19 +9,31 @@
                     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#0F0F10" />
                     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#171719" />
                     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#222225" />
-                    <SolidColorBrush x:Key="AccentBrush" Color="#FA233B" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#FF0436" />
+                    <SolidColorBrush x:Key="PinkBrush" Color="#FF4E6B" />
+                    <LinearGradientBrush x:Key="BrandGradientBrush" StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop Color="#FF4E6B" Offset="0" />
+                        <GradientStop Color="#FF0436" Offset="1" />
+                    </LinearGradientBrush>
                     <SolidColorBrush x:Key="SubtleBrush" Color="#A6A6AA" />
                     <SolidColorBrush x:Key="DividerBrush" Color="#29292C" />
                     <SolidColorBrush x:Key="PlaceholderBrush" Color="#303035" />
+                    <Color x:Key="TransportCapsuleTintColor">#1C1C1F</Color>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Dark">
                     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#0F0F10" />
                     <SolidColorBrush x:Key="PanelBackgroundBrush" Color="#171719" />
                     <SolidColorBrush x:Key="CardBackgroundBrush" Color="#222225" />
-                    <SolidColorBrush x:Key="AccentBrush" Color="#FA233B" />
+                    <SolidColorBrush x:Key="AccentBrush" Color="#FF0436" />
+                    <SolidColorBrush x:Key="PinkBrush" Color="#FF4E6B" />
+                    <LinearGradientBrush x:Key="BrandGradientBrush" StartPoint="0,0.5" EndPoint="1,0.5">
+                        <GradientStop Color="#FF4E6B" Offset="0" />
+                        <GradientStop Color="#FF0436" Offset="1" />
+                    </LinearGradientBrush>
                     <SolidColorBrush x:Key="SubtleBrush" Color="#A6A6AA" />
                     <SolidColorBrush x:Key="DividerBrush" Color="#29292C" />
                     <SolidColorBrush x:Key="PlaceholderBrush" Color="#303035" />
+                    <Color x:Key="TransportCapsuleTintColor">#1C1C1F</Color>
                 </ResourceDictionary>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F7F7F8" />
@@ -31,8 +43,16 @@
                     <SolidColorBrush x:Key="SubtleBrush" Color="#66666E" />
                     <SolidColorBrush x:Key="DividerBrush" Color="#D6D6DA" />
                     <SolidColorBrush x:Key="PlaceholderBrush" Color="#DDDEE2" />
+                    <Color x:Key="TransportCapsuleTintColor">#FFFFFF</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <Style x:Key="AccentButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="{ThemeResource AccentBrush}" />
+                <Setter Property="Foreground" Value="White" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="Padding" Value="16,8" />
+                <Setter Property="BorderThickness" Value="0" />
+            </Style>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Storage.Streams;
@@ -32,17 +33,20 @@ public sealed partial class HistoryPage : Page
     {
         InitializeComponent();
         PeriodCombo.SelectedIndex = 0;
-        Loaded += async (_, _) => await RefreshAsync();
+        Loaded += async (_, _) => await RefreshAsync(animate: true);
         App.Services.PlayerStateChanged += ServicesOnChanged;
         Unloaded += (_, _) => App.Services.PlayerStateChanged -= ServicesOnChanged;
     }
 
+    // Playback ticks refresh the data silently — only the two moments that
+    // change what's on screen (opening the page, changing the period) get
+    // the cascading reveal, otherwise the cards would flash every tick.
     private void ServicesOnChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(async () => await RefreshAsync());
 
     private async void PeriodCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_refreshing) return;
-        await RefreshAsync();
+        await RefreshAsync(animate: true);
     }
 
     private RecapPeriod Period => PeriodCombo.SelectedIndex switch
@@ -58,7 +62,7 @@ public sealed partial class HistoryPage : Page
         if (await dialog.ShowAsync() == ContentDialogResult.Primary) await App.Services.ClearHistoryAsync();
     }
 
-    private async Task RefreshAsync()
+    private async Task RefreshAsync(bool animate = false)
     {
         _refreshing = true;
         var period = Period;
@@ -93,6 +97,35 @@ public sealed partial class HistoryPage : Page
 
         RefreshHourlyClock(App.Services.HoursOfDay(period));
         _refreshing = false;
+        if (animate) RevealCards();
+    }
+
+    /// <summary>Cards rising into place one after another, matching RecapView.swift's .reveal(shown, order:).</summary>
+    private void RevealCards()
+    {
+        FrameworkElement?[] cards = [HeroCard, StreakBusiestGrid, TopListsGrid, HourlyClockCard];
+        for (var i = 0; i < cards.Length; i++)
+        {
+            if (cards[i] is not { } card) continue;
+            var transform = new TranslateTransform { Y = 18 };
+            card.RenderTransform = transform;
+            card.Opacity = 0;
+
+            var delay = TimeSpan.FromMilliseconds(i * 70);
+            var storyboard = new Storyboard();
+
+            var opacityAnimation = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromMilliseconds(450), BeginTime = delay, EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut } };
+            Storyboard.SetTarget(opacityAnimation, card);
+            Storyboard.SetTargetProperty(opacityAnimation, "Opacity");
+
+            var offsetAnimation = new DoubleAnimation { From = 18, To = 0, Duration = TimeSpan.FromMilliseconds(450), BeginTime = delay, EasingFunction = new BackEase { Amplitude = 0.3, EasingMode = EasingMode.EaseOut } };
+            Storyboard.SetTarget(offsetAnimation, transform);
+            Storyboard.SetTargetProperty(offsetAnimation, "Y");
+
+            storyboard.Children.Add(opacityAnimation);
+            storyboard.Children.Add(offsetAnimation);
+            storyboard.Begin();
+        }
     }
 
     private void RefreshHourlyClock(int[] hours)

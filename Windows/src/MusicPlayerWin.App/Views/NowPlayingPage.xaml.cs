@@ -15,6 +15,9 @@ namespace MusicPlayerWin.App.Views;
 
 public sealed partial class NowPlayingPage : Page
 {
+    /// <summary>Palette.emptyStage — the grey tint when there's no artwork to borrow a colour from.</summary>
+    private static readonly SolidColorBrush EmptyStageBrush = new(Microsoft.UI.ColorHelper.FromArgb(80, 0x6B, 0x6B, 0x70));
+
     private readonly DispatcherQueueTimer _timer;
     private TimedLyrics? _lyrics;
     private int? _lastLine;
@@ -78,7 +81,7 @@ public sealed partial class NowPlayingPage : Page
         if (track is not null && (await TryPaletteAsync(track)) is PaletteColor palette)
             RootGrid.Background = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(80, palette.R, palette.G, palette.B));
         else
-            RootGrid.Background = null;
+            RootGrid.Background = EmptyStageBrush;
         RebuildLyrics();
         RefreshLyricsPosition();
     }

@@ -7,7 +7,7 @@
             <Button Content="‹ Back" Click="Back_Click" HorizontalAlignment="Left" />
             <TextBlock x:Name="ArtistName" FontSize="36" FontWeight="SemiBold" />
             <TextBlock x:Name="Meta" Foreground="{ThemeResource SubtleBrush}" />
-            <Button Content="Play artist" Click="Play_Click" HorizontalAlignment="Left" />
+            <Button Content="Play artist" Click="Play_Click" HorizontalAlignment="Left" Style="{StaticResource AccentButtonStyle}" />
             <TextBlock Text="Albums" FontSize="24" FontWeight="SemiBold" />
             <ListView x:Name="AlbumsList" SelectionMode="None" IsItemClickEnabled="True" ItemClick="Album_ItemClick">
                 <ListView.ItemTemplate>

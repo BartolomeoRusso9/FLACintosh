@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using MusicPlayerWin.App.Controls;
 using MusicPlayerWin.Core;
 using MusicPlayerWin.Core.Audio;
 using MusicPlayerWin.Core.Library;
@@ -17,14 +18,11 @@ namespace MusicPlayerWin.App.Views;
 public sealed partial class SettingsPage : Page
 {
     private bool _refreshing;
-    private readonly Slider[] _eqSliders;
     private sealed record SourceRow(string Key, string Name, string Detail, bool IsVisible);
 
     public SettingsPage()
     {
         InitializeComponent();
-        _eqSliders = [Eq0, Eq1, Eq2, Eq3, Eq4, Eq5, Eq6, Eq7, Eq8, Eq9];
-        PresetCombo.ItemsSource = AudioEffectsSettings.Presets.Keys.ToArray();
         ThemeCombo.SelectedIndex = App.Services.Settings.Theme switch { "Dark" => 1, "Light" => 2, _ => 0 };
         StartupToggle.IsOn = App.Services.Settings.StartWithWindows || WindowsStartupService.IsEnabled();
         TrayToggle.IsOn = App.Services.Settings.MinimizeToTray;
@@ -48,7 +46,7 @@ public sealed partial class SettingsPage : Page
         Stats.Text = $"{library.Tracks.Count} songs · {library.Albums.Count} albums · {library.Artists.Count} artists";
         AutoPlayToggle.IsOn = App.Services.Playback.Queue.AutoPlay;
         var effects = App.Services.Effects.Normalize();
-        EqualizerToggle.IsOn = effects.EqualizerEnabled;
+        EqualizerSummary.Text = effects.EqualizerEnabled ? (effects.PresetName ?? "Manual") : "Off";
         GaplessToggle.IsOn = effects.Gapless;
         CrossfadeToggle.IsOn = effects.Crossfade;
         CrossfadeSlider.Value = effects.CrossfadeSeconds;
@@ -61,12 +59,6 @@ public sealed partial class SettingsPage : Page
         };
         ReplayGainPreampSlider.Value = effects.ReplayGainPreamp;
         ReplayGainPreampValue.Text = $"Preamp: {effects.ReplayGainPreamp:+0.0;-0.0;0.0} dB";
-        for (var i = 0; i < _eqSliders.Length; i++)
-            _eqSliders[i].Value = i < effects.Gains.Length ? effects.Gains[i] : 0;
-        PresetCombo.SelectedItem = AudioEffectsSettings.Presets.ContainsKey(effects.PresetName) ? effects.PresetName : null;
-        EqHeadroom.Text = effects.EqualizerEnabled && effects.EqualizerHeadroomDb < 0
-            ? $"Automatic headroom: {effects.EqualizerHeadroomDb:0.0} dB"
-            : "Headroom: 0 dB";
         ServersList.ItemsSource = App.Services.Servers.Servers;
         NoServers.Visibility = App.Services.Servers.Servers.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
         SourcesList.ItemsSource = App.Services.Library.Sources.Select(source => new SourceRow(source.Key, source.IsFolder ? "Local Music" : App.Services.Servers.Find(source.ServerId!.Value)?.Name ?? "Server", source.IsFolder ? (App.Services.Library.RootPath ?? "Local folder") : source.ServerId!.Value.ToString(), !App.Services.Library.IsHidden(source))).ToArray();
@@ -121,11 +113,7 @@ public sealed partial class SettingsPage : Page
         try { Process.Start(new ProcessStartInfo { FileName = "explorer.exe", Arguments = $"\"{Path.GetDirectoryName(AppLog.LogPath)}\"", UseShellExecute = true }); } catch { }
     }
 
-    private void Equalizer_Toggled(object sender, RoutedEventArgs e)
-    {
-        if (_refreshing) return;
-        App.Services.SetAudioEffects(App.Services.Effects with { EqualizerEnabled = EqualizerToggle.IsOn });
-    }
+    private void OpenEqualizer_Click(object sender, RoutedEventArgs e) => new EqualizerWindow().Activate();
 
     private void Gapless_Toggled(object sender, RoutedEventArgs e)
     {
@@ -164,18 +152,6 @@ public sealed partial class SettingsPage : Page
         if (_refreshing) return;
         ReplayGainPreampValue.Text = $"Preamp: {e.NewValue:+0.0;-0.0;0.0} dB";
         App.Services.SetAudioEffects(App.Services.Effects with { ReplayGainPreamp = e.NewValue });
-    }
-
-    private void EqBand_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
-    {
-        if (_refreshing || sender is not Slider slider || slider.Tag is not string tag || !int.TryParse(tag, out var band)) return;
-        App.Services.SetEqualizerGain(band, e.NewValue);
-    }
-
-    private void PresetCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (_refreshing || PresetCombo.SelectedItem is not string preset) return;
-        App.Services.ApplyEqualizerPreset(preset);
     }
 
     private async void Rescan_Click(object sender, RoutedEventArgs e)
