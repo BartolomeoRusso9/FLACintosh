@@ -99,7 +99,7 @@ jobs:
           key: nuget-${{ hashFiles('Windows/**/*.csproj', 'Windows/**/packages.lock.json') }}
           restore-keys: nuget-
 
-      - name: Build MusicPlayerWin.exe package
+      - name: Build FLACintosh.exe package
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
           BUILD_NUMBER: ${{ github.run_number }}
@@ -109,13 +109,13 @@ jobs:
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: MusicPlayerWin-${{ needs.prepare.outputs.version }}
-          path: Windows/dist/MusicPlayerWin-*.zip
+          name: FLACintosh-Windows-${{ needs.prepare.outputs.version }}
+          path: Windows/artifacts/win-x64/FLACintosh.exe
           if-no-files-found: error
 
   publish:
     needs: [prepare, build-macos, build-windows]
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-24.04
 
     steps:
@@ -128,7 +128,7 @@ jobs:
       - name: Download Windows artifact
         uses: actions/download-artifact@v8
         with:
-          name: MusicPlayerWin-${{ needs.prepare.outputs.version }}
+          name: FLACintosh-Windows-${{ needs.prepare.outputs.version }}
           path: dist/windows
 
       - name: Publish release
@@ -136,11 +136,10 @@ jobs:
         with:
           files: |
             dist/macos/FLACintosh-*.dmg
-            dist/windows/MusicPlayerWin-*.zip
+            dist/windows/FLACintosh.exe
           generate_release_notes: true
           body: |
             macOS: ad hoc signed, not notarized — the first launch needs
             **System Settings → Privacy & Security → Open Anyway**.
 
-            Windows: x64 build packaged as a ZIP. Extract the archive and run
-            the EXE from the published output folder.
+            Windows: x64 build distributed as a standalone FLACintosh.exe.
