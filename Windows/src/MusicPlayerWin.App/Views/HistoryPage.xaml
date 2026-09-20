@@ -5,9 +5,41 @@
     <ScrollViewer Padding="32,28,32,110">
         <StackPanel Spacing="22">
             <StackPanel Spacing="4">
-                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock Text="Recap" FontSize="34" FontWeight="SemiBold" /><Button Grid.Column="1" Content="Clear history" Click="ClearHistory_Click" /></Grid>
+                <Grid ColumnSpacing="10">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="220"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                    <TextBlock Text="Recap" FontSize="34" FontWeight="SemiBold" />
+                    <ComboBox x:Name="PeriodCombo" Grid.Column="1" SelectionChanged="PeriodCombo_SelectionChanged" VerticalAlignment="Bottom">
+                        <ComboBoxItem Content="Last 30 Days"/>
+                        <ComboBoxItem Content="This Year"/>
+                        <ComboBoxItem Content="All Time"/>
+                    </ComboBox>
+                    <Button Grid.Column="2" Content="Clear history" Click="ClearHistory_Click" VerticalAlignment="Bottom" />
+                </Grid>
                 <TextBlock x:Name="Summary" Foreground="{ThemeResource SubtleBrush}" />
             </StackPanel>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="18" Padding="24">
+                <StackPanel Spacing="4">
+                    <TextBlock x:Name="HeroSubtitle" FontSize="13" FontWeight="SemiBold" Foreground="{ThemeResource SubtleBrush}" />
+                    <TextBlock x:Name="HeroMinutes" FontSize="48" FontWeight="Bold" />
+                    <TextBlock Text="minutes listened" FontSize="15" FontWeight="SemiBold" />
+                    <TextBlock x:Name="HeroCounts" FontSize="12" Foreground="{ThemeResource SubtleBrush}" Margin="0,4,0,0" />
+                </StackPanel>
+            </Border>
+
+            <Grid ColumnSpacing="18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
+                    <StackPanel Spacing="6"><TextBlock x:Name="StreakTitle" FontSize="17" FontWeight="Bold"/><TextBlock x:Name="StreakDetail" FontSize="12" Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap"/></StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
+                    <StackPanel Spacing="6"><TextBlock x:Name="BusiestTitle" FontSize="17" FontWeight="Bold"/><TextBlock x:Name="BusiestDetail" FontSize="12" Foreground="{ThemeResource SubtleBrush}" TextWrapping="Wrap"/></StackPanel>
+                </Border>
+            </Grid>
+
             <Grid ColumnSpacing="18">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -18,12 +50,36 @@
                     <StackPanel><TextBlock Text="Top artists" FontSize="18" FontWeight="SemiBold"/><ListView x:Name="ArtistsList" SelectionMode="None"/></StackPanel>
                 </Border>
                 <Border Grid.Column="1" Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
-                    <StackPanel><TextBlock Text="Top albums" FontSize="18" FontWeight="SemiBold"/><ListView x:Name="AlbumsList" SelectionMode="None"/></StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Top albums" FontSize="18" FontWeight="SemiBold"/>
+                        <ListView x:Name="AlbumsList" SelectionMode="None">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Padding="0,4">
+                                        <Border Width="34" Height="34" CornerRadius="4" Background="{ThemeResource PlaceholderBrush}">
+                                            <Image Source="{Binding Cover}" Stretch="UniformToFill" />
+                                        </Border>
+                                        <StackPanel VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontSize="13" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding PlaysLabel}" FontSize="11" Foreground="{ThemeResource SubtleBrush}" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
-                    <StackPanel><TextBlock Text="Top tracks" FontSize="18" FontWeight="SemiBold"/><ListView x:Name="TracksList" SelectionMode="None"/></StackPanel>
+                    <StackPanel><TextBlock Text="Top tracks (double-click to play)" FontSize="18" FontWeight="SemiBold"/><ListView x:Name="TracksList" SelectionMode="None" IsItemClickEnabled="True" DoubleTapped="TracksList_DoubleTapped"/></StackPanel>
                 </Border>
             </Grid>
+
+            <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Text="When you listen" FontSize="20" FontWeight="SemiBold" />
+                    <StackPanel x:Name="HourlyClock" Orientation="Horizontal" Height="110" VerticalAlignment="Bottom" />
+                </StackPanel>
+            </Border>
             <Border Background="{ThemeResource PanelBackgroundBrush}" CornerRadius="16" Padding="18">
                 <StackPanel Spacing="10">
                     <TextBlock Text="Last 30 days" FontSize="20" FontWeight="SemiBold" />

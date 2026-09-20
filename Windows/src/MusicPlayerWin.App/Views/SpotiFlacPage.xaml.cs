@@ -57,21 +57,16 @@ public sealed partial class SpotiFlacPage : Page
         catch (Exception ex) { Status.Text = ex.Message; }
     }
 
-    private async void Result_Click(object sender, ItemClickEventArgs e)
+    private void Result_Click(object sender, ItemClickEventArgs e)
     {
         if (e.ClickedItem is not SpotiFlacResult result) return;
-        try
-        {
-            var list = await App.Services.SpotiFlacServer.GetTracklistAsync(result.Link);
-            await new ContentDialog { XamlRoot = XamlRoot, Title = result.Title, Content = $"{list.Tracks.Count} tracks\n\n" + string.Join("\n", list.Tracks.Select(x => $"{x.Index + 1}. {x.Title}")), CloseButtonText = "Close" }.ShowAsync();
-        }
-        catch (Exception ex) { Status.Text = ex.Message; }
+        App.MainWindow.ShowSpotiFlacTracklist(result);
     }
 
-    private async void Download_Click(object sender, RoutedEventArgs e)
+    private void Download_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is not SpotiFlacResult result) return;
-        try { await App.Services.SpotiFlacServer.DownloadAsync(result.Link); Status.Text = $"Download requested: {result.Title}"; await App.Services.ReloadAllSourcesAsync(); }
-        catch (Exception ex) { Status.Text = ex.Message; }
+        App.Services.SpotiFlacServer.Enqueue(result);
+        Status.Text = $"Download requested: {result.Title}";
     }
 }

@@ -44,15 +44,20 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="2*" />
                 </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                    <Border Width="44" Height="44" Background="{ThemeResource PlaceholderBrush}" CornerRadius="7">
-                        <Image x:Name="NowArtwork" Stretch="UniformToFill" />
-                    </Border>
-                    <StackPanel VerticalAlignment="Center" MaxWidth="420">
-                        <TextBlock x:Name="NowTitle" Text="Nothing playing" TextTrimming="CharacterEllipsis" />
-                        <TextBlock x:Name="NowArtist" Foreground="{ThemeResource SubtleBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                <Button Grid.Column="0" Click="OpenNowPlaying_Click" Background="Transparent" BorderThickness="0" Padding="0" HorizontalContentAlignment="Left" HorizontalAlignment="Left" ToolTipService.ToolTip="Open Now Playing">
+                    <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                        <Border Width="44" Height="44" Background="{ThemeResource PlaceholderBrush}" CornerRadius="7">
+                            <Image x:Name="NowArtwork" Stretch="UniformToFill" />
+                        </Border>
+                        <StackPanel VerticalAlignment="Center" MaxWidth="420">
+                            <TextBlock x:Name="NowTitle" Text="Nothing playing" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <TextBlock x:Name="NowArtist" Foreground="{ThemeResource SubtleBrush}" FontSize="12" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="NowCastDevice" Foreground="#E5484D" FontSize="12" TextTrimming="CharacterEllipsis" Visibility="Collapsed" />
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
-                </StackPanel>
+                </Button>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" VerticalAlignment="Center">
                     <Button Content="Previous" Click="Previous_Click" />
@@ -60,6 +65,8 @@
                     <Button Content="Next" Click="Next_Click" />
                     <Button x:Name="ShuffleButton" Content="Shuffle" Click="Shuffle_Click" />
                     <Button x:Name="RepeatButton" Content="Repeat Off" Click="Repeat_Click" />
+                    <Button x:Name="LyricsButton" Content="Lyrics" Click="Lyrics_Click" ToolTipService.ToolTip="No lyrics for this track" />
+                    <Button x:Name="CastButton" Content="Cast" Click="Cast_Click" ToolTipService.ToolTip="Cast" />
                     <Button Content="Queue" Click="Queue_Click" />
                 </StackPanel>
 

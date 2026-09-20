@@ -22,6 +22,9 @@ public sealed record ListeningSummary(
 
 public sealed record ListeningDay(DateOnly Date, int Plays, double Minutes);
 
+/// <summary>Windows counterpart of ListeningRecap.Period in ListeningHistory.swift.</summary>
+public enum RecapPeriod { Month, Year, All }
+
 public sealed class ListeningHistoryStore
 {
     private readonly object _gate = new();
@@ -84,6 +87,64 @@ public sealed class ListeningHistoryStore
     }
 
     public IReadOnlyList<ListenRecord> Recent(int count = 50) => ReadAll().OrderByDescending(x => x.StartedAt).Take(Math.Max(1, count)).ToArray();
+
+    private static bool InPeriod(DateTimeOffset date, RecapPeriod period, DateTimeOffset now) => period switch
+    {
+        RecapPeriod.Month => date > now.AddDays(-30),
+        RecapPeriod.Year => date.ToLocalTime().Year == now.ToLocalTime().Year,
+        _ => true
+    };
+
+    public ListeningSummary SummaryForPeriod(RecapPeriod period, DateTimeOffset? now = null)
+    {
+        var reference = now ?? DateTimeOffset.UtcNow;
+        var valid = ReadAll().Where(x => IsValidPlay(x) && InPeriod(x.StartedAt, period, reference)).ToArray();
+        return new ListeningSummary(
+            valid.Length,
+            valid.Sum(x => x.HeardSeconds) / 60,
+            valid.GroupBy(x => x.Artist, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase).Take(5).Select(g => (g.Key, g.Count())).ToArray(),
+            valid.GroupBy(x => x.Album, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).ThenBy(g => g.Key, StringComparer.OrdinalIgnoreCase).Take(5).Select(g => (g.Key, g.Count())).ToArray(),
+            valid.GroupBy(x => x.TrackKey).OrderByDescending(g => g.Count()).ThenBy(g => g.First().Title, StringComparer.OrdinalIgnoreCase).Take(5).Select(g => (g.First().Title, g.First().Artist, g.Count())).ToArray());
+    }
+
+    /// <summary>Plays in each hour of the day, 0…23, local time.</summary>
+    public int[] HoursOfDay(RecapPeriod period, DateTimeOffset? now = null)
+    {
+        var reference = now ?? DateTimeOffset.UtcNow;
+        var hours = new int[24];
+        foreach (var record in ReadAll().Where(x => IsValidPlay(x) && InPeriod(x.StartedAt, period, reference)))
+            hours[record.StartedAt.ToLocalTime().Hour]++;
+        return hours;
+    }
+
+    public (DateOnly Date, double Minutes)? BusiestDay(RecapPeriod period, DateTimeOffset? now = null)
+    {
+        var reference = now ?? DateTimeOffset.UtcNow;
+        var days = ReadAll().Where(x => IsValidPlay(x) && InPeriod(x.StartedAt, period, reference))
+            .GroupBy(x => DateOnly.FromDateTime(x.StartedAt.ToLocalTime().DateTime))
+            .Select(g => (Date: g.Key, Minutes: g.Sum(x => x.HeardSeconds) / 60))
+            .ToArray();
+        if (days.Length == 0) return null;
+        return days.OrderByDescending(x => x.Minutes).First();
+    }
+
+    public int LongestStreakDays(RecapPeriod period, DateTimeOffset? now = null)
+    {
+        var reference = now ?? DateTimeOffset.UtcNow;
+        var days = ReadAll().Where(x => IsValidPlay(x) && InPeriod(x.StartedAt, period, reference))
+            .Select(x => DateOnly.FromDateTime(x.StartedAt.ToLocalTime().DateTime))
+            .Distinct().OrderBy(x => x).ToArray();
+        var longest = 0;
+        var run = 0;
+        DateOnly? previous = null;
+        foreach (var day in days)
+        {
+            run = previous is { } p && day.DayNumber - p.DayNumber == 1 ? run + 1 : 1;
+            longest = Math.Max(longest, run);
+            previous = day;
+        }
+        return longest;
+    }
 
     public void Clear()
     {

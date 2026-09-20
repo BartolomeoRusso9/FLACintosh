@@ -66,6 +66,7 @@ public sealed class AppServices : IAsyncDisposable
         _engine.StateChanged += EngineOnStateChanged;
         ConfigureIntegrations();
         _spotiFlacCli.Detect();
+        _spotiFlacServer.DownloadFinished += SpotiFlacServerOnDownloadFinished;
         AppLog.Info("MusicPlayerWin services initialized.");
     }
 
@@ -77,6 +78,10 @@ public sealed class AppServices : IAsyncDisposable
     public AudioEffectsSettings Effects => _settings.Current.Effects;
     public PlaybackController Playback => _playback;
     public ListeningSummary ListeningSummary => _history.Summary();
+    public ListeningSummary SummaryFor(RecapPeriod period) => _history.SummaryForPeriod(period);
+    public int[] HoursOfDay(RecapPeriod period) => _history.HoursOfDay(period);
+    public (DateOnly Date, double Minutes)? BusiestDay(RecapPeriod period) => _history.BusiestDay(period);
+    public int LongestStreakDays(RecapPeriod period) => _history.LongestStreakDays(period);
     public DiscordRichPresenceService Discord => _discord;
     public ScrobblingService Scrobbling => _scrobbling;
     public SpotiFlacServerClient SpotiFlacServer => _spotiFlacServer;
@@ -415,6 +420,12 @@ public sealed class AppServices : IAsyncDisposable
         ".mp3" => "audio/mpeg", ".m4a" or ".m4b" or ".aac" => "audio/mp4", ".wav" => "audio/wav", ".aif" or ".aiff" => "audio/aiff", ".ogg" or ".oga" => "audio/ogg", ".opus" => "audio/ogg", ".flac" => "audio/flac", _ => "application/octet-stream"
     } : "audio/flac";
 
+    private async void SpotiFlacServerOnDownloadFinished(object? sender, EventArgs e)
+    {
+        try { await ReloadAllSourcesAsync().ConfigureAwait(false); }
+        catch (Exception ex) { AppLog.Warn("Library refresh after a SpotiFLAC download failed.", ex); }
+    }
+
     public Task ClearHistoryAsync() { _history.Clear(); PlayerStateChanged?.Invoke(this, EventArgs.Empty); return Task.CompletedTask; }
     public Task PlayAlbumAsync(LibraryAlbum album) => album.Tracks.Count == 0 ? Task.CompletedTask : _playback.PlayAsync(album.Tracks, 0);
     public Task PlayAllAsync() { var tracks = Library.InOrder(); return tracks.Count == 0 ? Task.CompletedTask : _playback.PlayAsync(tracks, 0); }
@@ -527,6 +538,7 @@ public sealed class AppServices : IAsyncDisposable
         _engine.StateChanged -= EngineOnStateChanged;
         try { _history.Finish(); } catch { }
         try { await _scrobbling.FlushAsync().ConfigureAwait(false); } catch (Exception ex) { AppLog.Warn("Final scrobble flush failed.", ex); }
+        _spotiFlacServer.DownloadFinished -= SpotiFlacServerOnDownloadFinished;
         await _discord.DisposeAsync().ConfigureAwait(false);
         await _scrobbling.DisposeAsync().ConfigureAwait(false);
         await _spotiFlacServer.DisposeAsync().ConfigureAwait(false);

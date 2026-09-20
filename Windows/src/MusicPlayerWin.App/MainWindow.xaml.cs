@@ -133,6 +133,8 @@ public sealed partial class MainWindow : Window
 
     public void ShowPlaylist(MusicPlayerWin.Core.Playlists.Playlist playlist) => ContentFrame.Content = new PlaylistDetailPage(playlist);
 
+    public void ShowSpotiFlacTracklist(Services.SpotiFlacResult result) => ContentFrame.Content = new SpotiFlacTracklistPage(result);
+
     public void GoBackOrHome() => ContentFrame.Content = new HomePage();
 
 
@@ -196,6 +198,21 @@ public sealed partial class MainWindow : Window
         _changingVolume = false;
         ShuffleButton.Content = App.Services.Playback.Queue.IsShuffling ? "Shuffle On" : "Shuffle";
         RepeatButton.Content = $"Repeat {App.Services.Playback.Queue.RepeatMode}";
+
+        var hasLyrics = track?.HasLyrics == true;
+        ToolTipService.SetToolTip(LyricsButton, hasLyrics ? "Lyrics" : "No lyrics for this track");
+
+        if (App.Services.Cast.Connected && !string.IsNullOrWhiteSpace(App.Services.Cast.ReceiverHost))
+        {
+            CastButton.Content = $"Cast: {App.Services.Cast.ReceiverHost}";
+            NowCastDevice.Text = $"· {App.Services.Cast.ReceiverHost}";
+            NowCastDevice.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            CastButton.Content = "Cast";
+            NowCastDevice.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void Shuffle_Click(object sender, RoutedEventArgs e)
@@ -236,6 +253,12 @@ public sealed partial class MainWindow : Window
     {
         ContentFrame.Content = new QueuePage();
     }
+
+    private void OpenNowPlaying_Click(object sender, RoutedEventArgs e) => ContentFrame.Content = new NowPlayingPage();
+
+    private void Lyrics_Click(object sender, RoutedEventArgs e) => ContentFrame.Content = new NowPlayingPage();
+
+    private void Cast_Click(object sender, RoutedEventArgs e) => ContentFrame.Content = new SettingsPage();
 
     private void VolumeSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
