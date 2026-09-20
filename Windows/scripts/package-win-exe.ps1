@@ -18,10 +18,8 @@ if (-not (Test-Path $artifactDir)) {
     throw "Expected build output at $artifactDir but it was not created."
 }
 
-$sourceExe = Join-Path $artifactDir 'FLACintosh.exe'
-if (-not (Test-Path $sourceExe)) {
-    throw "Expected EXE at $sourceExe but it was not created."
+if (-not (Test-Path $exePath)) {
+    throw "Expected EXE at $exePath but it was not created."
 }
 
-Copy-Item $sourceExe $exePath -Force
 Write-Host "==> EXE created: $exePath"
