@@ -11,7 +11,10 @@ struct RecapView: View {
     @AppStorage("recapPeriod") private var periodKey = ListeningRecap.Period.year.rawValue
     @State private var shown = false
     @State private var confirmingClear = false
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
+    private var compact: Bool { sizeClass == .compact }
     private var period: ListeningRecap.Period { .init(rawValue: periodKey) ?? .year }
 
     var body: some View {
@@ -27,24 +30,13 @@ struct RecapView: View {
                     hero(recap)
                         .reveal(shown, order: 0)
 
-                    HStack(alignment: .top, spacing: 16) {
-                        if let artist = recap.topArtists.first {
-                            topArtist(artist, others: Array(recap.topArtists.dropFirst()))
-                                .reveal(shown, order: 1)
-                        }
-                        VStack(spacing: 16) {
-                            if let kind = recap.listenerKind {
-                                factCard(symbol: kind.symbol, title: kind.title, detail: kind.detail)
-                            }
-                            factCard(
-                                symbol: "flame.fill",
-                                title: recap.longestStreak == 1 ? "1 day" : "\(recap.longestStreak) days in a row",
-                                detail: recap.busiestDay.map { "Your biggest day was \($0.date.formatted(.dateTime.day().month(.wide))), with \($0.minutes) minutes." } ?? ""
-                            )
-                        }
-                        .reveal(shown, order: 2)
+                    // Side by side in a window; one above the other on a phone.
+                    if compact {
+                        VStack(spacing: 16) { artistAndFacts(recap) }
+                    } else {
+                        HStack(alignment: .top, spacing: 16) { artistAndFacts(recap) }
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    .fixedSize(horizontal: false, vertical: true)
 
                     topSongs(recap).reveal(shown, order: 3)
                     if !recap.topAlbums.isEmpty {
@@ -54,7 +46,11 @@ struct RecapView: View {
                     footer
                 }
             }
+            #if os(macOS)
             .padding(28)
+            #else
+            .padding(16)
+            #endif
             .frame(maxWidth: 980, alignment: .leading)
             .frame(maxWidth: .infinity)
         }
@@ -72,6 +68,20 @@ struct RecapView: View {
     // MARK: - Sections
 
     private var header: some View {
+        #if os(iOS)
+        // One column: title and picker side by side left the title a letter
+        // wide on a phone. The navigation bar already says "Recap".
+        VStack(alignment: .leading, spacing: 12) {
+            Text("What you played in FLACintosh, kept only on this device.")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+            Picker("Period", selection: $periodKey) {
+                ForEach(ListeningRecap.Period.allCases) { Text($0.title).tag($0.rawValue) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+        }
+        #else
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Recap")
@@ -88,6 +98,7 @@ struct RecapView: View {
             .labelsHidden()
             .frame(width: 300)
         }
+        #endif
     }
 
     private var empty: some View {
@@ -107,9 +118,51 @@ struct RecapView: View {
         .padding(.vertical, 90)
     }
 
+    /// The top artist and the two fact cards, for whichever container the
+    /// layout puts them in.
+    @ViewBuilder
+    private func artistAndFacts(_ recap: ListeningRecap) -> some View {
+        if let artist = recap.topArtists.first {
+            topArtist(artist, others: Array(recap.topArtists.dropFirst()))
+                .reveal(shown, order: 1)
+        }
+        VStack(spacing: 16) {
+            if let kind = recap.listenerKind {
+                factCard(symbol: kind.symbol, title: kind.title, detail: kind.detail)
+            }
+            factCard(
+                symbol: "flame.fill",
+                title: recap.longestStreak == 1 ? "1 day" : "\(recap.longestStreak) days in a row",
+                detail: recap.busiestDay.map { "Your biggest day was \($0.date.formatted(.dateTime.day().month(.wide))), with \($0.minutes) minutes." } ?? ""
+            )
+        }
+        .reveal(shown, order: 2)
+    }
+
     private func hero(_ recap: ListeningRecap) -> some View {
-        HStack(alignment: .center, spacing: 24) {
-            VStack(alignment: .leading, spacing: 6) {
+        Group {
+            if compact {
+                VStack(alignment: .leading, spacing: 18) {
+                    heroText(recap)
+                    coverFan(recap.topAlbums.compactMap { album(for: $0) })
+                        .frame(maxWidth: .infinity)
+                }
+            } else {
+                HStack(alignment: .center, spacing: 24) {
+                    heroText(recap)
+                    Spacer(minLength: 10)
+                    coverFan(recap.topAlbums.compactMap { album(for: $0) })
+                }
+            }
+        }
+        .padding(compact ? 20 : 28)
+        .frame(maxWidth: .infinity, minHeight: 230, alignment: .leading)
+        .background(Palette.brand, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: Palette.red.opacity(0.25), radius: 18, y: 8)
+    }
+
+    private func heroText(_ recap: ListeningRecap) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
                 Text(period == .year ? "Your \(Date.now.formatted(.dateTime.year())) in music" : "Your \(period.title.lowercased()) in music")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.85))
@@ -125,14 +178,7 @@ struct RecapView: View {
                     .font(.system(size: 13))
                     .foregroundStyle(.white.opacity(0.75))
                     .padding(.top, 6)
-            }
-            Spacer(minLength: 10)
-            coverFan(recap.topAlbums.compactMap { album(for: $0) })
         }
-        .padding(28)
-        .frame(maxWidth: .infinity, minHeight: 230, alignment: .leading)
-        .background(Palette.brand, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .shadow(color: Palette.red.opacity(0.25), radius: 18, y: 8)
     }
 
     /// The top records, fanned out like sleeves on a table.
@@ -232,9 +278,21 @@ struct RecapView: View {
     private func topAlbums(_ recap: ListeningRecap) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Top Albums").font(.system(size: 20, weight: .bold))
-            HStack(alignment: .top, spacing: 16) {
-                ForEach(recap.topAlbums) { ranked in
-                    RecapAlbumTile(ranked: ranked, album: album(for: ranked))
+            if compact {
+                // Five tiles do not fit across a phone: they scroll instead.
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 16) {
+                        ForEach(recap.topAlbums) { ranked in
+                            RecapAlbumTile(ranked: ranked, album: album(for: ranked))
+                                .frame(width: 140)
+                        }
+                    }
+                }
+            } else {
+                HStack(alignment: .top, spacing: 16) {
+                    ForEach(recap.topAlbums) { ranked in
+                        RecapAlbumTile(ranked: ranked, album: album(for: ranked))
+                    }
                 }
             }
         }
@@ -277,7 +335,7 @@ struct RecapView: View {
         .confirmationDialog("Clear your listening history?", isPresented: $confirmingClear) {
             Button("Clear History", role: .destructive) { history.clear() }
         } message: {
-            Text("Every recorded play is deleted from this Mac. The Recap starts again from zero.")
+            Text("Every recorded play is deleted from \(ThisDevice.lowercase). The Recap starts again from zero.")
         }
     }
 
@@ -376,8 +434,12 @@ private struct RecapSongRow: View {
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
         .animation(.easeOut(duration: 0.12), value: hovering)
+        #if os(macOS)
         .onTapGesture(count: 2, perform: onPlay)
         .help("Double-click to play")
+        #else
+        .onTapGesture(perform: onPlay)
+        #endif
     }
 }
 

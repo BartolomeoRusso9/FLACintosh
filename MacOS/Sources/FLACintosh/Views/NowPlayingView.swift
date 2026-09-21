@@ -26,8 +26,20 @@ struct NowPlayingView: View {
     @State private var panel: Panel = .lyrics
     @Environment(PlaylistStore.self) private var playlists: PlaylistStore?
     @Namespace private var panelSwitchSpace
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var phonePage: PhonePage = PhonePage.startup
+    #endif
 
     var body: some View {
+        #if os(iOS)
+        if sizeClass == .compact { phoneBody } else { desktopBody }
+        #else
+        desktopBody
+        #endif
+    }
+
+    private var desktopBody: some View {
         ZStack {
             NowPlayingStage(palette: model.artwork?.palette ?? [])
 
@@ -60,6 +72,233 @@ struct NowPlayingView: View {
         // anyway, so they sat a good fifty points below Apple Music's.
         .ignoresSafeArea()
     }
+
+    // MARK: - Phone: one column
+
+    #if os(iOS)
+    /// A phone has room for one thing at a time: the record, its words, or
+    /// what plays next. The two-column layout above is the Mac's and the
+    /// iPad's.
+    private enum PhonePage: String {
+        case player, lyrics, queue
+
+        /// Always the record, except in a debug build started with
+        /// `-phonePage lyrics`: a simulator cannot tap, and this is how a
+        /// screenshot reaches the other pages.
+        static var startup: PhonePage {
+            #if DEBUG
+            if let name = UserDefaults.standard.string(forKey: "phonePage"), let page = PhonePage(rawValue: name) {
+                return page
+            }
+            #endif
+            return .player
+        }
+    }
+
+    private var phoneBody: some View {
+        ZStack {
+            NowPlayingStage(palette: model.artwork?.palette ?? [])
+
+            VStack(spacing: 0) {
+                phoneTopBar
+
+                switch phonePage {
+                case .player:
+                    phonePlayer
+                case .lyrics:
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(spacing: 12) {
+                            AlbumArt(id: model.artworkID, data: model.artwork?.data, corner: 6,
+                                     placeholder: AnyShapeStyle(Color.black.opacity(0.58)))
+                                .frame(width: 44, height: 44)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(model.track?.title ?? "Not playing")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .lineLimit(1)
+                                if let artist = model.track?.artist, !artist.isEmpty {
+                                    Text(artist)
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Palette.white.opacity(0.6))
+                                        .lineLimit(1)
+                                }
+                            }
+                            .foregroundStyle(Palette.white)
+                        }
+                        if let lyrics = model.lyrics {
+                            LyricsView(lyrics: lyrics, model: model)
+                        } else {
+                            noLyrics
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 12)
+                case .queue:
+                    queuePanel
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                }
+
+                phonePageSwitch
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
+            }
+        }
+        .environment(\.colorScheme, .dark)
+    }
+
+    /// Back down to the library, and where the sound goes. Inside the safe
+    /// area: the Dynamic Island and the clock are up there.
+    private var phoneTopBar: some View {
+        HStack(spacing: 10) {
+            Button(action: onClose) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(Palette.white)
+                    .frame(width: 48, height: 38)
+                    .contentShape(Capsule())
+            }
+            .background(.white.opacity(0.14), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
+
+            Spacer()
+
+            HStack(spacing: 18) {
+                AirPlayButton(tint: .whiteAlpha(0.85))
+                    .frame(width: 24, height: 22)
+                CastButton(model: model, tint: Palette.white.opacity(0.85), activeTint: Palette.pink, size: 17)
+                EqualizerButton()
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 38)
+            .background(.white.opacity(0.14), in: Capsule())
+            .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+    }
+
+    private var phonePlayer: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 6)
+
+            sleeve
+                // The sleeve settles back on pause, as it does on the Mac.
+                .scaleEffect(model.isPlaying || model.track == nil ? 1 : 0.88)
+                .shadow(
+                    color: .black.opacity(model.isPlaying ? 0.35 : 0.22),
+                    radius: model.isPlaying ? 22 : 12,
+                    y: model.isPlaying ? 12 : 6
+                )
+                .animation(.spring(response: 0.45, dampingFraction: 0.72), value: model.isPlaying)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 28)
+
+            Spacer(minLength: 14)
+
+            title
+                .padding(.horizontal, 28)
+
+            scrubber
+                .padding(.horizontal, 28)
+                .padding(.top, 18)
+
+            phoneTransport
+                .padding(.horizontal, 22)
+                .padding(.top, 8)
+
+            HStack(spacing: 10) {
+                Image(systemName: "speaker.fill").font(.system(size: 11))
+                Slider(value: $model.volume, in: 0 ... 1)
+                    .tint(Palette.white.opacity(0.9))
+                Image(systemName: "speaker.wave.3.fill").font(.system(size: 11))
+            }
+            .foregroundStyle(Palette.white.opacity(0.7))
+            .padding(.horizontal, 28)
+            .padding(.top, 10)
+
+            Spacer(minLength: 6)
+        }
+    }
+
+    /// The Mac's transport at a size a thumb can hit: every button is a
+    /// forty-four point target.
+    private var phoneTransport: some View {
+        HStack(spacing: 0) {
+            Button { model.isShuffling.toggle() } label: {
+                Image(systemName: "shuffle")
+                    .font(.system(size: 18))
+                    .foregroundStyle(model.isShuffling ? Palette.pink : Palette.white.opacity(0.6))
+                    .symbolEffect(.bounce, value: model.isShuffling)
+                    .frame(width: 44, height: 44)
+            }
+            Spacer(minLength: 0)
+            Button { model.previous() } label: {
+                Image(systemName: "backward.fill")
+                    .font(.system(size: 26))
+                    .frame(width: 52, height: 52)
+            }
+            Spacer(minLength: 0)
+            Button { model.togglePlayPause() } label: {
+                Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.system(size: 38))
+                    .frame(width: 64, height: 56)
+                    .contentTransition(.symbolEffect(.replace.downUp))
+            }
+            Spacer(minLength: 0)
+            Button { model.advance(by: 1) } label: {
+                Image(systemName: "forward.fill")
+                    .font(.system(size: 26))
+                    .frame(width: 52, height: 52)
+            }
+            Spacer(minLength: 0)
+            Button { model.repeatMode = model.repeatMode.next } label: {
+                Image(systemName: model.repeatMode.symbol)
+                    .font(.system(size: 18))
+                    .foregroundStyle(model.repeatMode == .off ? Palette.white.opacity(0.6) : Palette.pink)
+                    .contentTransition(.symbolEffect(.replace))
+                    .frame(width: 44, height: 44)
+            }
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(Palette.white)
+        .disabled(model.track == nil)
+    }
+
+    /// The record, its words, or what plays next: one at a time.
+    private var phonePageSwitch: some View {
+        HStack(spacing: 2) {
+            phonePageButton(.player, symbol: "music.note", label: "Now Playing")
+            phonePageButton(.lyrics, symbol: "quote.bubble", label: "Lyrics")
+            phonePageButton(.queue, symbol: "list.bullet", label: "Playing next")
+        }
+        .padding(3)
+        .background(.white.opacity(0.14), in: Capsule())
+        .overlay(Capsule().strokeBorder(.white.opacity(0.14)))
+    }
+
+    private func phonePageButton(_ page: PhonePage, symbol: String, label: String) -> some View {
+        let isOn = phonePage == page
+        return Button {
+            withAnimation(.snappy(duration: 0.25)) { phonePage = page }
+        } label: {
+            Image(systemName: symbol)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(isOn ? Palette.white : Palette.white.opacity(0.6))
+                .frame(width: 64, height: 40)
+                .background {
+                    if isOn {
+                        Capsule()
+                            .fill(Palette.white.opacity(0.22))
+                            .matchedGeometryEffect(id: "phonePageHighlight", in: panelSwitchSpace)
+                    }
+                }
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+    }
+    #endif
 
     // MARK: - Left: the record
 
@@ -161,7 +400,7 @@ struct NowPlayingView: View {
             .foregroundStyle(Palette.white.opacity(0.6))
             .lineLimit(1)
 
-            HStack(spacing: 8) {
+            BadgeRow {
                 // Which copy is playing, when the same song is both here and
                 // on a server.
                 if let origin = model.currentTrack?.source {
@@ -402,7 +641,7 @@ struct NowPlayingView: View {
                 .foregroundStyle(Palette.white.opacity(0.8))
             // Where the sound goes, next to how loud it is — Apple Music's
             // place for it.
-            AirPlayButton(tint: NSColor.white.withAlphaComponent(0.85))
+            AirPlayButton(tint: .whiteAlpha(0.85))
                 .frame(width: 22, height: 18)
                 .help("AirPlay")
             CastButton(model: model, tint: Palette.white.opacity(0.85), activeTint: Palette.pink, size: 15)
@@ -452,6 +691,70 @@ struct NowPlayingView: View {
                 }
         }
         .help(help)
+    }
+}
+
+/// The small labels under the title: where the song is from, where it is
+/// playing, what format it is in.
+///
+/// One row in a window, where they all fit. On a phone they do not — the
+/// source, the Cast device and the format are each a capsule wider than a
+/// third of the screen — and in a row that will not wrap they were squeezed
+/// to a word wide and broken a letter at a time. There they flow onto the
+/// next line instead.
+private struct BadgeRow<Content: View>: View {
+    @ViewBuilder let content: Content
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    var body: some View {
+        if sizeClass == .compact {
+            FlowLayout(spacing: 8) { content }
+        } else {
+            HStack(spacing: 8) { content }
+        }
+    }
+}
+
+/// Views placed left to right, each at the size it wants, and on to a new
+/// line when the next one would not fit.
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let limit = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var widest: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(ProposedViewSize(width: limit, height: nil))
+            if x > 0, x + size.width > limit {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+            widest = max(widest, x - spacing)
+        }
+        return CGSize(width: widest, height: y + rowHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX
+        var y = bounds.minY
+        var rowHeight: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil))
+            if x > bounds.minX, x + size.width > bounds.maxX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            subview.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            rowHeight = max(rowHeight, size.height)
+        }
     }
 }
 
@@ -536,9 +839,12 @@ private struct TitleLink: View {
 /// Opens the equalizer from the volume capsule.
 private struct EqualizerButton: View {
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openEqualizer) private var openEqualizer
 
     var body: some View {
-        Button { openWindow(id: "equalizer") } label: {
+        Button {
+            if let openEqualizer { openEqualizer() } else { openWindow(id: "equalizer") }
+        } label: {
             Image(systemName: "slider.vertical.3")
                 .font(.system(size: 13))
                 .foregroundStyle(Palette.white.opacity(0.85))

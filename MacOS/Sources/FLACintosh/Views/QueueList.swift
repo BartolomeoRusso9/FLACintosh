@@ -13,7 +13,7 @@ struct QueueList: View {
     var body: some View {
         if model.queue.isEmpty {
             Text("Nothing queued")
-                .font(.system(size: 12))
+                .font(.list(12))
                 .foregroundStyle(Palette.white.opacity(0.45))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -36,22 +36,22 @@ struct QueueList: View {
     private func row(_ track: LibraryTrack, isCurrent: Bool) -> some View {
         HStack(spacing: 8) {
             Image(systemName: isCurrent ? "speaker.wave.2.fill" : "music.note")
-                .font(.system(size: 9))
+                .font(.list(9))
                 .foregroundStyle(isCurrent ? Palette.pink : Palette.white.opacity(0.55))
                 .frame(width: 14)
             VStack(alignment: .leading, spacing: 1) {
                 Text(track.title)
-                    .font(.system(size: 12, weight: isCurrent ? .semibold : .regular))
+                    .font(.list(12, weight: isCurrent ? .semibold : .regular))
                     .foregroundStyle(Palette.white.opacity(isCurrent ? 1 : 0.85))
                     .lineLimit(1)
                 Text(track.artist)
-                    .font(.system(size: 10))
+                    .font(.list(10))
                     .foregroundStyle(Palette.white.opacity(0.55))
                     .lineLimit(1)
             }
             Spacer()
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, RowMetrics.vertical)
         .padding(.horizontal, 4)
         .contentShape(Rectangle())
     }

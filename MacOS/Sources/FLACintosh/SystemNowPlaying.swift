@@ -1,4 +1,4 @@
-import AppKit
+import Foundation
 import MediaPlayer
 import Observation
 
@@ -135,7 +135,7 @@ final class SystemNowPlaying {
         }
 
         if let artwork = model.artwork, artwork.id != sentArtworkID,
-           let image = NSImage(data: artwork.data) {
+           let image = PlatformImage(data: artwork.data) {
             info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
             sentArtworkID = artwork.id
         } else if model.artwork == nil {

@@ -1,6 +1,8 @@
-import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
+
+#if os(macOS)
+import AppKit
 
 @main
 struct FLACintoshApp: App {
@@ -130,6 +132,26 @@ struct FLACintoshApp: App {
         }
     }
 }
+#endif
+
+#if os(iOS)
+/// The tabs of the phone layout.
+private enum PhoneTab: String, Hashable {
+    case home, library, download, recap, settings
+
+    /// Where the app opens. Always Home, except in a debug build started with
+    /// `-phoneTab library` (a launch argument is read as a preference): a
+    /// simulator has no way to tap, and this is how a screenshot reaches a tab.
+    static var startup: PhoneTab {
+        #if DEBUG
+        if let name = UserDefaults.standard.string(forKey: "phoneTab"), let tab = PhoneTab(rawValue: name) {
+            return tab
+        }
+        #endif
+        return .home
+    }
+}
+#endif
 
 struct RootView: View {
     @Bindable var model: PlaybackModel
@@ -140,12 +162,26 @@ struct RootView: View {
     let history: ListeningHistory
     @Environment(OfflineStore.self) private var offline
 
+    /// The theme, watched here so that changing it in Settings redraws the
+    /// app: the palette itself is read wherever a colour is needed.
+    @AppStorage(Theme.storageKey) private var themeKey = Theme.ruby.rawValue
+
     @State private var section: LibrarySection = .home
     /// What is pushed over the section: an album, an artist, a download
     /// result. Explicit so the sidebar can clear it.
     @State private var path = NavigationPath()
     @State private var search = ""
     @State private var addingServer = false
+    /// The Settings tab of the phone layout. Empty on the Mac, where Settings
+    /// is a window of its own and needs no place in this view.
+    var settings: AnyView = AnyView(EmptyView())
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var choosingFolder = false
+    @State private var tab: PhoneTab = PhoneTab.startup
+    /// One stack per tab, so each remembers how deep it was left.
+    @State private var phonePaths: [PhoneTab: NavigationPath] = [:]
+    #endif
 
     /// Held on the route rather than in `@State`: the transport bar lives in
     /// a `safeAreaInset` outside this view's body and raises it from there.
@@ -174,6 +210,12 @@ struct RootView: View {
         // For the source labels, which appear on tiles, rows and Now Playing
         // alike and would otherwise need the store threaded through each.
         .environment(library)
+        // A new theme is new colours in a hundred places, none of which is
+        // watching for it: everything under here is built again. Where the
+        // user was — the section, the pages pushed — is kept, in this view.
+        .id(themeKey)
+        // Emerald is dark whatever the system is; Ruby follows it.
+        .preferredColorScheme(themeKey == Theme.emerald.rawValue ? .dark : nil)
         .task {
             // `swift run FLACintosh /path/to/track.flac` — during development the
             // alternative is clicking through an open panel on every rebuild.
@@ -202,10 +244,36 @@ struct RootView: View {
             // for `swift run FLACintosh <file>` during development.
             try? await Task.sleep(for: .seconds(2))
             model.openStandalone(URL(fileURLWithPath: path))
+            #if DEBUG
+            // `-showNowPlaying YES`: for a screenshot of the screen a tap
+            // would open.
+            if UserDefaults.standard.bool(forKey: "showNowPlaying") {
+                try? await Task.sleep(for: .seconds(1))
+                showNowPlaying(true)
+            }
+            #if os(iOS)
+            // `-openFirstAlbum YES`: the page a tap on the first album opens.
+            if UserDefaults.standard.bool(forKey: "openFirstAlbum"), let album = library.albums.first {
+                tab = .library
+                pushOnPhone(album, tab: .library)
+            }
+            // `-openSection songs` (or recentlyAdded, artists, albums).
+            if let name = UserDefaults.standard.string(forKey: "openSection"),
+               let shelf = LibrarySection.shelves.first(where: { $0.id == name }) {
+                tab = .library
+                pushOnPhone(shelf, tab: .library)
+            }
+            #endif
+            #endif
         }
         .sheet(isPresented: $addingServer) {
             ServerSetup(library: library) { addingServer = false }
         }
+        #if os(iOS)
+        .fileImporter(isPresented: $choosingFolder, allowedContentTypes: [.folder]) { result in
+            if case .success(let url) = result { library.setRoot(url) }
+        }
+        #endif
         // Before macOS asks for the Mac's password, the app says what for.
         .sheet(item: Binding(
             get: { library.keychainRequest },
@@ -222,7 +290,18 @@ struct RootView: View {
         }
     }
 
+    @ViewBuilder
     private var libraryScreen: some View {
+        #if os(iOS)
+        // A sidebar needs room. A phone gets tabs; an iPad, or a phone turned
+        // wide enough to be regular, keeps the sidebar of the Mac.
+        if sizeClass == .compact { phoneScreen } else { splitScreen }
+        #else
+        splitScreen
+        #endif
+    }
+
+    private var splitScreen: some View {
         NavigationSplitView {
             Sidebar(
                 // Every click in the sidebar goes back to the top of its
@@ -240,19 +319,7 @@ struct RootView: View {
                 onAddServer: { addingServer = true }
             )
         } detail: {
-            NavigationStack(path: $path) {
-                withTransport(content)
-                    .navigationDestination(for: LibraryAlbum.self) { album in
-                        withTransport(AlbumDetail(album: album, model: model, library: library))
-                    }
-                    .navigationDestination(for: LibraryArtist.self) { artist in
-                        withTransport(ArtistDetail(artist: artist, model: model))
-                    }
-                    // A search result on the Download shelf: its track list.
-                    .navigationDestination(for: SpotiFLACServer.Item.self) { item in
-                        withTransport(RemoteTracklistView(item: item, server: spotiflacServer, library: library))
-                    }
-            }
+            detailStack(path: $path) { content(for: section) }
         }
         // Apple Music's accent, applied once at the root: buttons, sliders,
         // links. Not the sidebar highlight — AppKit draws that from the
@@ -263,11 +330,19 @@ struct RootView: View {
         // The lyrics screen is the whole window, toolbar included. Left
         // visible, the search field floats over the words — it belongs to
         // the split view underneath and draws above anything stacked on it.
+        #if os(macOS)
         .toolbar(showingNowPlaying ? .hidden : .visible, for: .windowToolbar)
-        .toolbar {
-            // Not on the Recap: there, a reload arrow reads as "refresh the
-            // recap", which it is not — the recap updates by itself.
-            if section != .recap {
+        #else
+        .toolbar(showingNowPlaying ? .hidden : .visible, for: .navigationBar)
+        #endif
+        .toolbar { reloadToolbar(hidden: section == .recap) }
+    }
+
+    /// The reload arrow. Not on the Recap: there, it reads as "refresh the
+    /// recap", which it is not — the recap updates by itself.
+    @ToolbarContentBuilder
+    private func reloadToolbar(hidden: Bool) -> some ToolbarContent {
+        if !hidden {
             ToolbarItem(placement: .primaryAction) {
                 // The same as ⌘R, for when files or a server have changed:
                 // there is no watcher, so the library only knows what it read.
@@ -283,9 +358,111 @@ struct RootView: View {
                 .help("Reload the library from the folder and every server (⌘R)")
                 .disabled(library.isScanning)
             }
+        }
+    }
+
+    /// A navigation stack with the destinations every screen can push: an
+    /// album, an artist, a download result, a whole section. One for the
+    /// detail column of the split view, one per tab on a phone.
+    private func detailStack<Root: View>(path: Binding<NavigationPath>, @ViewBuilder root: () -> Root) -> some View {
+        NavigationStack(path: path) {
+            withTransport(root())
+                .navigationDestination(for: LibraryAlbum.self) { album in
+                    withTransport(AlbumDetail(album: album, model: model, library: library))
+                }
+                .navigationDestination(for: LibraryArtist.self) { artist in
+                    withTransport(ArtistDetail(artist: artist, model: model))
+                }
+                // A search result on the Download shelf: its track list.
+                .navigationDestination(for: SpotiFLACServer.Item.self) { item in
+                    withTransport(RemoteTracklistView(item: item, server: spotiflacServer, library: library))
+                }
+                // A shelf chosen from a list, on a phone.
+                .navigationDestination(for: LibrarySection.self) { target in
+                    withTransport(content(for: target))
+                        .searchable(text: $search, prompt: "Find in \(target.title)")
+                }
+        }
+    }
+
+    #if os(iOS)
+    /// The phone layout: the Mac's sidebar becomes a tab bar. What the sidebar
+    /// listed under Library, Playlists and Sources is the Library tab; Home,
+    /// Download and Recap are tabs of their own.
+    private var phoneScreen: some View {
+        TabView(selection: $tab) {
+            Tab("Home", systemImage: "house", value: PhoneTab.home) {
+                detailStack(path: pathBinding(.home)) {
+                    content(for: .home)
+                        .searchable(text: $search, prompt: "Find in Home")
+                        .toolbar { reloadToolbar(hidden: false) }
+                }
+            }
+            Tab("Library", systemImage: "music.note.list", value: PhoneTab.library) {
+                detailStack(path: pathBinding(.library)) {
+                    Sidebar(
+                        // Never a row of its own, so every tap is a change and
+                        // pushes: a shelf opens on top of this list.
+                        selection: Binding(get: { .home }, set: { pushOnPhone($0, tab: .library) }),
+                        library: library,
+                        excluding: [.home, .download, .recap],
+                        onChooseFolder: chooseFolder,
+                        onAddServer: { addingServer = true }
+                    )
+                    .navigationTitle("Library")
+                    .toolbar { reloadToolbar(hidden: false) }
+                }
+            }
+            Tab("Download", systemImage: "arrow.down.circle", value: PhoneTab.download) {
+                detailStack(path: pathBinding(.download)) {
+                    content(for: .download)
+                        .searchable(text: $search, prompt: "Search Spotify")
+                }
+            }
+            Tab("Recap", systemImage: "chart.bar.xaxis", value: PhoneTab.recap) {
+                detailStack(path: pathBinding(.recap)) { content(for: .recap) }
+            }
+            Tab("Settings", systemImage: "gearshape", value: PhoneTab.settings) {
+                settings
             }
         }
+        .tint(Palette.red)
+    }
 
+    private func pathBinding(_ tab: PhoneTab) -> Binding<NavigationPath> {
+        Binding(get: { phonePaths[tab] ?? NavigationPath() }, set: { phonePaths[tab] = $0 })
+    }
+
+    private func pushOnPhone(_ value: some Hashable, tab: PhoneTab) {
+        var stack = phonePaths[tab] ?? NavigationPath()
+        stack.append(value)
+        phonePaths[tab] = stack
+    }
+    #endif
+
+    /// What Home hands a shelf to: the sidebar's selection in the split view,
+    /// a push on the current tab on a phone.
+    private var sectionBinding: Binding<LibrarySection> {
+        #if os(iOS)
+        if sizeClass == .compact {
+            return Binding(get: { .home }, set: { pushOnPhone($0, tab: tab) })
+        }
+        #endif
+        return $section
+    }
+
+    /// Leaves a page that has gone — a playlist that was deleted.
+    private func leaveSection() {
+        #if os(iOS)
+        if sizeClass == .compact {
+            if var stack = phonePaths[tab], !stack.isEmpty {
+                stack.removeLast()
+                phonePaths[tab] = stack
+            }
+            return
+        }
+        #endif
+        section = .home
     }
 
     /// One screen of the stack, with the transport bar floating over it.
@@ -303,6 +480,11 @@ struct RootView: View {
     private func withTransport(_ screen: some View) -> some View {
         screen
             .contentMargins(.bottom, 88, for: .scrollContent)
+            .background {
+                if themeKey == Theme.emerald.rawValue {
+                    Palette.canvas.ignoresSafeArea()
+                }
+            }
             .overlay(alignment: .bottom) {
                 MiniPlayer(model: model) { showNowPlaying(true) }
             }
@@ -329,10 +511,18 @@ struct RootView: View {
     /// Lowers Now Playing and opens a page on the shelf underneath.
     private func open(_ value: some Hashable) {
         showNowPlaying(false)
+        #if os(iOS)
+        if sizeClass == .compact {
+            pushOnPhone(value, tab: .library)
+            tab = .library
+            return
+        }
+        #endif
         path.append(value)
     }
 
     private func showNowPlaying(_ shown: Bool) {
+        if shown { dismissKeyboard() }
         // Always inside an animation: a `.transition` flipped without one
         // leaves the view stranded wherever the transition starts.
         withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
@@ -340,20 +530,22 @@ struct RootView: View {
         }
     }
 
+    /// One shelf, laid out. `target` rather than the `section` state, so the
+    /// same screens serve the split view and a phone's tabs and pushed lists.
     @ViewBuilder
-    private var content: some View {
-        switch section {
+    private func content(for target: LibrarySection) -> some View {
+        switch target {
         case .home:
             // Before the empty case: Home is where hidden sources are shown
             // again, so it has to stay reachable when nothing is visible.
-            HomeView(library: library, model: model, section: $section, search: search)
+            HomeView(library: library, model: model, section: sectionBinding, search: search)
         case .recap:
             RecapView(history: history, library: library, model: model)
         case .playlist(let reference):
             PlaylistDetail(reference: reference, model: model, library: library) {
-                section = .home
+                leaveSection()
             }
-            .id(section)
+            .id(target)
         case .downloaded:
             AlbumGrid(albums: offline.albums) { album in
                 model.play(album.tracks, startingAt: 0)
@@ -374,8 +566,8 @@ struct RootView: View {
                 key: "recentlyAdded",
                 defaultSort: .added
             )
-            .id(section)
-            .navigationTitle(section.title)
+            .id(target)
+            .navigationTitle(target.title)
         case .albums:
             AlbumsSection(
                 albums: filtered(library.albums),
@@ -384,14 +576,14 @@ struct RootView: View {
                 key: "albums",
                 defaultSort: .title
             )
-            .id(section)
-            .navigationTitle(section.title)
+            .id(target)
+            .navigationTitle(target.title)
         case .artists:
             ArtistsSection(artists: filteredArtists, model: model)
-                .navigationTitle(section.title)
+                .navigationTitle(target.title)
         case .songs:
             SongsSection(songs: filteredSongs, model: model, library: library)
-                .navigationTitle(section.title)
+                .navigationTitle(target.title)
         }
     }
 
@@ -474,6 +666,7 @@ struct RootView: View {
     }
 
     private func chooseFolder() {
+        #if os(macOS)
         let panel = NSOpenPanel()
         panel.canChooseFiles = false
         panel.canChooseDirectories = true
@@ -482,9 +675,13 @@ struct RootView: View {
         if panel.runModal() == .OK, let url = panel.url {
             library.setRoot(url)
         }
+        #else
+        choosingFolder = true
+        #endif
     }
 }
 
+#if os(macOS)
 /// "Equalizer…" in the Controls menu, opening its window.
 private struct EqualizerMenuItem: View {
     @Environment(\.openWindow) private var openWindow
@@ -494,3 +691,4 @@ private struct EqualizerMenuItem: View {
             .keyboardShortcut("e", modifiers: [.command, .option])
     }
 }
+#endif

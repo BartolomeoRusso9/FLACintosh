@@ -58,6 +58,9 @@ struct RemoteTracklistView: View {
             .padding(.vertical, 20)
         }
         .navigationTitle(item.title)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task(id: item.link) { await load() }
     }
 
@@ -72,11 +75,30 @@ struct RemoteTracklistView: View {
 
     // MARK: - Header
 
-    private var header: some View {
-        HStack(alignment: .bottom, spacing: 24) {
-            artwork
-                .frame(width: 220, height: 220)
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
+    /// The cover beside the details in a window; above them on a phone.
+    @ViewBuilder
+    private var header: some View {
+        if sizeClass == .compact {
+            VStack(alignment: .leading, spacing: 20) {
+                artwork
+                    .frame(width: 240, height: 240)
+                    .frame(maxWidth: .infinity)
+                headerInfo
+            }
+        } else {
+            HStack(alignment: .bottom, spacing: 24) {
+                artwork
+                    .frame(width: 220, height: 220)
+                headerInfo
+                Spacer(minLength: 0)
+            }
+        }
+    }
+
+    private var headerInfo: some View {
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.kind.title.uppercased())
                     .font(.system(size: 11, weight: .semibold))
@@ -106,13 +128,11 @@ struct RemoteTracklistView: View {
                 actions
                     .padding(.top, 10)
             }
-            Spacer(minLength: 0)
-        }
     }
 
     @ViewBuilder
     private var artwork: some View {
-        let cover = RemoteCover(url: tracklist?.cover ?? item.cover, symbol: item.kind == .artist ? "music.microphone" : "square.stack")
+        let cover = RemoteCover(url: tracklist?.cover ?? item.cover, symbol: item.kind == .artist ? "music.microphone" : "square.stack", maxPixel: 720)
         if item.kind == .artist {
             cover
                 .clipShape(Circle())
@@ -151,37 +171,63 @@ struct RemoteTracklistView: View {
         return parts.joined(separator: " · ")
     }
 
+    /// In a row where there is room, in two on a phone: three buttons with
+    /// labels this long left "Download Selected" one letter wide.
+    @ViewBuilder
     private var actions: some View {
-        HStack(spacing: 10) {
-            let busy = server.isDownloading(item)
-            Button {
-                server.download(item)
-            } label: {
-                Label(busy ? "Downloading…" : "Download All", systemImage: "arrow.down.circle.fill")
-                    .frame(minWidth: 120)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(Palette.red)
-            .controlSize(.large)
-            .disabled(tracklist == nil || busy || server.connection != .connected)
-
-            Button {
-                server.download(item, indices: selected.sorted())
-                selected = []
-            } label: {
-                Label(selected.isEmpty ? "Download Selected" : "Download \(selected.count) Selected", systemImage: "checklist")
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .disabled(selected.isEmpty || server.connection != .connected)
-
-            if let tracks = tracklist?.tracks, tracks.count > 1 {
-                Button(selected.count == tracks.count ? "Select None" : "Select All") {
-                    selected = selected.count == tracks.count ? [] : Set(tracks.map(\.index))
+        if sizeClass == .compact {
+            VStack(alignment: .leading, spacing: 10) {
+                downloadAllButton
+                HStack(spacing: 10) {
+                    downloadSelectedButton
+                    selectAllButton
                 }
-                .buttonStyle(.borderless)
-                .controlSize(.large)
             }
+        } else {
+            HStack(spacing: 10) {
+                downloadAllButton
+                downloadSelectedButton
+                selectAllButton
+            }
+        }
+    }
+
+    private var downloadAllButton: some View {
+        let busy = server.isDownloading(item)
+        return Button {
+            server.download(item)
+        } label: {
+            Label(busy ? "Downloading…" : "Download All", systemImage: "arrow.down.circle.fill")
+                .lineLimit(1)
+                .frame(minWidth: 120)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(Palette.red)
+        .controlSize(.large)
+        .disabled(tracklist == nil || busy || server.connection != .connected)
+    }
+
+    private var downloadSelectedButton: some View {
+        Button {
+            server.download(item, indices: selected.sorted())
+            selected = []
+        } label: {
+            Label(selected.isEmpty ? "Download Selected" : "Download \(selected.count) Selected", systemImage: "checklist")
+                .lineLimit(1)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.large)
+        .disabled(selected.isEmpty || server.connection != .connected)
+    }
+
+    @ViewBuilder
+    private var selectAllButton: some View {
+        if let tracks = tracklist?.tracks, tracks.count > 1 {
+            Button(selected.count == tracks.count ? "Select None" : "Select All") {
+                selected = selected.count == tracks.count ? [] : Set(tracks.map(\.index))
+            }
+            .buttonStyle(.borderless)
+            .controlSize(.large)
         }
     }
 
@@ -303,23 +349,26 @@ private struct RemoteTrackRow: View {
     let isSelected: Bool
     let toggle: () -> Void
 
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
     var body: some View {
         HStack(spacing: 12) {
             Button(action: toggle) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 15))
+                    .font(.list(15))
                     .foregroundStyle(isSelected ? Palette.red : Color.secondary)
             }
             .buttonStyle(.plain)
             .help(isSelected ? "Deselect" : "Select")
 
             Text("\(number)")
-                .font(.system(size: 12).monospacedDigit())
+                .font(.list(12).monospacedDigit())
                 .foregroundStyle(.secondary)
                 .frame(width: 24, alignment: .trailing)
 
             if showCover {
-                RemoteCover(url: track.cover)
+                RemoteCover(url: track.cover, maxPixel: 160)
                     .frame(width: 34, height: 34)
                     .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
             }
@@ -327,7 +376,7 @@ private struct RemoteTrackRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 5) {
                     Text(track.title)
-                        .font(.system(size: 13))
+                        .font(.list(13))
                         .lineLimit(1)
                     if track.explicit {
                         Image(systemName: "e.square.fill")
@@ -336,15 +385,17 @@ private struct RemoteTrackRow: View {
                     }
                 }
                 Text(track.artist)
-                    .font(.system(size: 11))
+                    .font(.list(11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if showAlbum {
+            // Not on a phone: beside a title, an artist and a duration there
+            // is no room for the album too.
+            if showAlbum, sizeClass != .compact {
                 Text(track.album)
-                    .font(.system(size: 11))
+                    .font(.list(11))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .frame(maxWidth: 220, alignment: .leading)
@@ -358,13 +409,13 @@ private struct RemoteTrackRow: View {
 
             if let duration = track.duration {
                 Text(TrackTime.format(duration))
-                    .font(.system(size: 12).monospacedDigit())
+                    .font(.list(12).monospacedDigit())
                     .foregroundStyle(.secondary)
-                    .frame(width: 48, alignment: .trailing)
+                    .frame(minWidth: 48, alignment: .trailing)
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .padding(.vertical, RowMetrics.vertical)
         .contentShape(Rectangle())
         // The whole row selects, not just the circle.
         .onTapGesture(perform: toggle)

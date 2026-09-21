@@ -50,7 +50,11 @@ struct HomeView: View {
                     songsBlock
                 }
             }
+            #if os(macOS)
             .padding(28)
+            #else
+            .padding(16)
+            #endif
         }
         .navigationTitle("Home")
     }
@@ -59,8 +63,12 @@ struct HomeView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
+            // The window has no title of its own to say where this is; a
+            // phone's navigation bar already does.
+            #if os(macOS)
             Text("Home")
                 .font(.system(size: 30, weight: .bold))
+            #endif
 
             Text("\(library.tracks.count) songs · \(library.albums.count) albums · \(library.visibleSources.count) of \(library.sources.count) sources shown")
                 .font(.system(size: 12))
@@ -69,11 +77,13 @@ struct HomeView: View {
             HStack(spacing: 10) {
                 Button { playAll(shuffled: false) } label: {
                     Label("Play All", systemImage: "play.fill")
-                        .frame(width: 110)
+                        .lineLimit(1)
+                        .frame(minWidth: 110)
                 }
                 Button { playAll(shuffled: true) } label: {
                     Label("Shuffle All", systemImage: "shuffle")
-                        .frame(width: 110)
+                        .lineLimit(1)
+                        .frame(minWidth: 110)
                 }
             }
             .buttonStyle(.borderedProminent)

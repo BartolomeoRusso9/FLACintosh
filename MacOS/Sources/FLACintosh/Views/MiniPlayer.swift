@@ -14,6 +14,80 @@ struct MiniPlayer: View {
     @State private var hoveringCentre = false
 
     var body: some View {
+        #if os(iOS)
+        phoneBar
+        #else
+        desktopBar
+        #endif
+    }
+
+    #if os(iOS)
+    /// The phone's bar: the sleeve, what is playing, and play and next. The
+    /// Mac's has room for shuffle, repeat, volume and AirPlay; on a phone those
+    /// are on Now Playing, one tap away — and the device's own buttons do the
+    /// volume.
+    @ViewBuilder
+    private var phoneBar: some View {
+        // Nothing on: no bar at all. An empty panel saying "Not playing" is
+        // a strip of a small screen taken for nothing.
+        if model.track != nil || model.isBuffering {
+            VStack(spacing: 2) {
+                HStack(spacing: 12) {
+                    HStack(spacing: 12) {
+                        // A placeholder that shows: the bar is translucent
+                        // and light, and the default one is too.
+                        AlbumArt(id: model.artworkID, data: model.artwork?.data, corner: 6,
+                                 placeholder: AnyShapeStyle(Color.primary.opacity(0.16)))
+                            .frame(width: 42, height: 42)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(model.track?.title ?? "Fetching from the server…")
+                                .font(.system(size: 14, weight: .semibold))
+                                .lineLimit(1)
+                            if let artist = model.track?.artist, !artist.isEmpty {
+                                Text(artist)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onOpenNowPlaying)
+
+                    Button { model.togglePlayPause() } label: {
+                        Image(systemName: model.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.system(size: 22))
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
+                            .contentTransition(.symbolEffect(.replace.downUp))
+                    }
+                    Button { model.advance(by: 1) } label: {
+                        Image(systemName: "forward.fill")
+                            .font(.system(size: 20))
+                            .frame(width: 40, height: 40)
+                            .contentShape(Rectangle())
+                    }
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.primary)
+
+                MiniScrubber(model: model)
+                    .frame(height: 12)
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 22, style: .continuous).strokeBorder(.separator.opacity(0.6)))
+            .shadow(color: .black.opacity(0.14), radius: 12, y: 4)
+            .padding(.horizontal, 10)
+            .padding(.bottom, 6)
+        }
+    }
+    #endif
+
+    private var desktopBar: some View {
         HStack(spacing: 14) {
             controls
             Spacer(minLength: 10)
@@ -157,7 +231,7 @@ struct MiniPlayer: View {
             }
             .foregroundStyle(.secondary)
 
-            AirPlayButton(tint: .secondaryLabelColor)
+            AirPlayButton(tint: .secondaryText)
                 .frame(width: 20, height: 16)
                 .help("AirPlay")
 

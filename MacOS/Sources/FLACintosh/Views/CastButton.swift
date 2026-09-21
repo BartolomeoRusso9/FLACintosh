@@ -26,12 +26,21 @@ struct CastButton: View {
             // white text on a light popover.
             CastPicker(model: model) { showing = false }
                 .environment(\.colorScheme, Self.systemScheme)
+                #if os(iOS)
+                // A phone turns a popover into a full-height sheet by
+                // default, with these three rows lost at the bottom of it.
+                .presentationCompactAdaptation(.popover)
+                #endif
         }
         .onAppear { model.wireCast() }
     }
 
     private static var systemScheme: ColorScheme {
+        #if os(macOS)
         NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .dark : .light
+        #else
+        UITraitCollection.current.userInterfaceStyle == .dark ? .dark : .light
+        #endif
     }
 
     private var isConnecting: Bool {
@@ -44,6 +53,15 @@ private struct CastPicker: View {
     let model: PlaybackModel
     let dismiss: () -> Void
 
+    /// The row for playing here, in the words and the glyph of this device.
+    private static var thisDevice: (name: String, symbol: String) {
+        #if os(macOS)
+        ("This Mac", "laptopcomputer")
+        #else
+        UIDevice.current.userInterfaceIdiom == .pad ? ("This iPad", "ipad") : ("This iPhone", "iphone")
+        #endif
+    }
+
     var body: some View {
         let cast = model.cast
         VStack(alignment: .leading, spacing: 2) {
@@ -53,7 +71,7 @@ private struct CastPicker: View {
                 .padding(.horizontal, 10)
                 .padding(.bottom, 4)
 
-            row(symbol: "laptopcomputer", title: "This Mac", detail: nil, selected: !cast.isActive, busy: false) {
+            row(symbol: Self.thisDevice.symbol, title: Self.thisDevice.name, detail: nil, selected: !cast.isActive, busy: false) {
                 model.stopCasting()
                 dismiss()
             }

@@ -62,34 +62,51 @@ struct EqualizerView: View {
 
             Divider()
 
-            HStack(spacing: 20) {
-                Picker("ReplayGain", selection: $effects.replayGain) {
-                    ForEach(AudioEffects.ReplayGainMode.allCases) { Text($0.title).tag($0) }
+            // Side by side where there is room for it, stacked where there is
+            // not: the window is 620 wide, a phone is not.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 20) {
+                    replayGainPicker
+                    preampControl
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 260)
-                .help("Evens out loudness between songs using the ReplayGain tags in your files")
-
-                HStack(spacing: 6) {
-                    Text("Preamp")
-                    Slider(value: $effects.replayGainPreamp, in: -6 ... 6, step: 0.5)
-                        .frame(width: 110)
-                    Text(String(format: "%+.1f dB", effects.replayGainPreamp))
-                        .font(.system(size: 11, design: .monospaced))
-                        .frame(width: 58, alignment: .leading)
+                VStack(alignment: .leading, spacing: 12) {
+                    replayGainPicker
+                    preampControl
                 }
-                .disabled(effects.replayGain == .off)
-                .opacity(effects.replayGain == .off ? 0.45 : 1)
             }
             .font(.system(size: 12))
 
-            Text("The equalizer and ReplayGain apply to everything played on this Mac, from a folder or a server. Cast devices play the file themselves, so they are not affected.")
+            Text("The equalizer and ReplayGain apply to everything played on \(ThisDevice.lowercase), from a folder or a server. Cast devices play the file themselves, so they are not affected.")
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(22)
+        #if os(macOS)
         .frame(width: 620)
+        #endif
+    }
+
+    private var replayGainPicker: some View {
+        Picker("ReplayGain", selection: $effects.replayGain) {
+            ForEach(AudioEffects.ReplayGainMode.allCases) { Text($0.title).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .frame(width: 260)
+        .help("Evens out loudness between songs using the ReplayGain tags in your files")
+    }
+
+    private var preampControl: some View {
+        HStack(spacing: 6) {
+            Text("Preamp")
+            Slider(value: $effects.replayGainPreamp, in: -6 ... 6, step: 0.5)
+                .frame(width: 110)
+            Text(String(format: "%+.1f dB", effects.replayGainPreamp))
+                .font(.system(size: 11, design: .monospaced))
+                .frame(width: 58, alignment: .leading)
+        }
+        .disabled(effects.replayGain == .off)
+        .opacity(effects.replayGain == .off ? 0.45 : 1)
     }
 }
 

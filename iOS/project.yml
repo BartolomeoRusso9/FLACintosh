@@ -1,0 +1,93 @@
+# The iPhone and iPad app. The Xcode project is generated from this file and
+# is not committed: run `xcodegen generate` in this folder, then open
+# FLACintosh.xcodeproj (or build it with xcodebuild, see README.md here).
+#
+# The sources are the Mac app's own, compiled a second time for iOS. Code that
+# only makes sense on a Mac is fenced with `#if os(macOS)`, and the iOS entry
+# point is MacOS/Sources/FLACintosh/IOSApp.swift.
+name: FLACintosh
+
+options:
+  bundleIdPrefix: io.github.bartolomeorusso9
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: false
+
+packages:
+  SFBAudioEngine:
+    url: https://github.com/sbooth/SFBAudioEngine
+    from: 0.7.0
+  # The Mac package, for its SyncedLyrics library (the lyrics parser).
+  FLACintoshCore:
+    path: ../MacOS
+
+settings:
+  base:
+    # The package builds in Swift 5 mode; so does this.
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1,2"
+    # Signing: none needed for the simulator. To run on a device, set a team
+    # here or in Xcode (a free Apple ID works; the install expires in 7 days).
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ""
+
+targets:
+  # Not plainly "FLACintosh": the Mac package has a product of that name, and
+  # two schemes called the same make `xcodebuild -scheme` pick either one —
+  # building the Mac package's executable instead of this app. The product
+  # is still FLACintosh.app.
+  FLACintosh-iOS:
+    type: application
+    platform: iOS
+    sources:
+      - path: ../MacOS/Sources/FLACintosh
+        excludes:
+          - "**/.DS_Store"
+      - path: Resources
+    dependencies:
+      - package: SFBAudioEngine
+        product: SFBAudioEngine
+      - package: FLACintoshCore
+        product: SyncedLyrics
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.bartolomeorusso9.flacintosh
+        PRODUCT_NAME: FLACintosh
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_PREVIEWS: YES
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: FLACintosh
+        LSApplicationCategoryType: public.app-category.music
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # Music that keeps playing with the screen locked.
+        UIBackgroundModes:
+          - audio
+        # The Files app shows the app's Documents folder, which is where the
+        # default library lives, and other apps can hand it files in place.
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        NSLocalNetworkUsageDescription: FLACintosh finds Google Cast devices and your music servers on your network.
+        NSBonjourServices:
+          - _googlecast._tcp
+        # Personal servers on the home network are usually plain http, by
+        # address or a name like spotiflac.lan; the Mac app talks to them the
+        # same way.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true

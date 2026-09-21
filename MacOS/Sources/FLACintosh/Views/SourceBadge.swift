@@ -8,13 +8,23 @@ import SwiftUI
 /// and it stays out of the way.
 struct SourceBadge: View {
     let source: LibrarySource
+    /// Just the glyph, without the name: for a row with no room for a
+    /// capsule as wide as the server's name, which on a phone took half of it.
+    var iconOnly = false
     @Environment(LibraryStore.self) private var library
 
     var body: some View {
         if library.showsSourceBadges {
-            Label(library.name(of: source), systemImage: library.symbol(of: source))
-                .labelStyle(.titleAndIcon)
-                .font(.system(size: 10, weight: .medium))
+            Group {
+                if iconOnly {
+                    Image(systemName: library.symbol(of: source))
+                        .font(.system(size: 11, weight: .medium))
+                } else {
+                    Label(library.name(of: source), systemImage: library.symbol(of: source))
+                        .labelStyle(.titleAndIcon)
+                        .font(.system(size: 10, weight: .medium))
+                }
+            }
                 .lineLimit(1)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)

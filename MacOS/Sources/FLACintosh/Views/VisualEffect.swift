@@ -1,5 +1,7 @@
-import AppKit
 import SwiftUI
+
+#if os(macOS)
+import AppKit
 
 /// An `NSVisualEffectView`, because SwiftUI's materials only ever blend with
 /// what is *inside* the window.
@@ -28,3 +30,13 @@ struct VisualEffect: NSViewRepresentable {
         view.blendingMode = blending
     }
 }
+#else
+/// iOS has no window to show through, so the sidebar's glass is SwiftUI's own
+/// material: it blends with what is behind it inside the app, which is all
+/// there is to blend with.
+struct VisualEffect: View {
+    var body: some View {
+        Rectangle().fill(.regularMaterial)
+    }
+}
+#endif

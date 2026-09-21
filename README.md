@@ -34,7 +34,8 @@ WinUI 3. Neither version uses Electron, a web view or an account.
 
 The repository is organized by platform: the macOS implementation lives in
 [`MacOS/`](MacOS/), while the Windows counterpart lives in
-[`Windows/`](Windows/).
+[`Windows/`](Windows/). An iPhone and iPad app is built from the same Swift
+sources as the macOS one; see [`iOS/`](iOS/README.md).
 
 ## Why FLACintosh?
 
@@ -121,6 +122,11 @@ High-resolution files play at their full sample rate and bit depth.
 - Windows 10 version 19041 or later
 - .NET 8 SDK and the Windows App SDK build prerequisites; see
   [Windows/BUILD-WINDOWS.md](Windows/BUILD-WINDOWS.md)
+
+### iPhone and iPad
+
+- iOS 18 or later. There is no download yet: build it from source with Xcode
+  and XcodeGen, as described in [iOS/README.md](iOS/README.md).
 
 ## Installation
 

@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "FLACintosh",
-    platforms: [.macOS(.v15)],
+    platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         // The parser and its model are a library on purpose: they are the
         // part worth testing, and they must stay runnable without a window.

@@ -1,3 +1,5 @@
+#if os(macOS)
+import AppKit
 import SwiftUI
 
 /// The player in the menu bar: what is on, the line being sung, and enough
@@ -143,3 +145,4 @@ private struct MenuBarScrubber: View {
         }
     }
 }
+#endif

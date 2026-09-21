@@ -1,4 +1,3 @@
-import AppKit
 import QuartzCore
 import SwiftUI
 
@@ -25,7 +24,7 @@ struct NowPlayingStage: View {
             Palette.emptyStage.ignoresSafeArea()
         } else {
             ZStack {
-                StageLayers(colours: palette.map { NSColor($0.asStageTint) })
+                StageLayers(colours: palette.map { PlatformColor($0.asStageTint) })
 
                 // Enough darkness at the top and bottom for the header and
                 // the transport bar to read over any cover.
@@ -45,8 +44,9 @@ struct NowPlayingStage: View {
     }
 }
 
+#if os(macOS)
 private struct StageLayers: NSViewRepresentable {
-    let colours: [NSColor]
+    let colours: [PlatformColor]
 
     func makeNSView(context: Context) -> StageView {
         let view = StageView()
@@ -58,8 +58,23 @@ private struct StageLayers: NSViewRepresentable {
         view.setColours(colours)
     }
 }
+#else
+private struct StageLayers: UIViewRepresentable {
+    let colours: [PlatformColor]
 
-final class StageView: NSView {
+    func makeUIView(context: Context) -> StageView {
+        let view = StageView()
+        view.setColours(colours)
+        return view
+    }
+
+    func updateUIView(_ view: StageView, context: Context) {
+        view.setColours(colours)
+    }
+}
+#endif
+
+final class StageView: PlatformView {
     /// Where each blob sits, and where it drifts to, in unit coordinates
     /// (origin top left, as the design was drawn).
     private static let anchors: [(from: CGPoint, to: CGPoint)] = [
@@ -70,21 +85,32 @@ final class StageView: NSView {
     ]
 
     private var blobs: [CAGradientLayer] = []
-    private var colours: [NSColor] = []
+    private var colours: [PlatformColor] = []
     private var laidOutSize: CGSize = .zero
 
-    override init(frame: NSRect) {
+    override init(frame: CGRect) {
         super.init(frame: frame)
-        wantsLayer = true
-        layer?.backgroundColor = NSColor(Palette.stage).cgColor
-        layer?.masksToBounds = true
+        backingLayer.backgroundColor = PlatformColor(Palette.stage).cgColor
+        backingLayer.masksToBounds = true
     }
 
     required init?(coder: NSCoder) { nil }
 
+    #if os(macOS)
     override var isFlipped: Bool { true }
 
-    func setColours(_ new: [NSColor]) {
+    override func layout() {
+        super.layout()
+        sizeMayHaveChanged()
+    }
+    #else
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        sizeMayHaveChanged()
+    }
+    #endif
+
+    func setColours(_ new: [PlatformColor]) {
         guard new != colours else { return }
         colours = new
         rebuildIfNeeded(force: blobs.count != new.count)
@@ -96,8 +122,7 @@ final class StageView: NSView {
         CATransaction.commit()
     }
 
-    override func layout() {
-        super.layout()
+    private func sizeMayHaveChanged() {
         // Rebuilding restarts the drift, so only when the size really
         // changed — not on every layout pass SwiftUI happens to run.
         if abs(bounds.width - laidOutSize.width) > 1 || abs(bounds.height - laidOutSize.height) > 1 {
@@ -106,7 +131,8 @@ final class StageView: NSView {
     }
 
     private func rebuildIfNeeded(force: Bool) {
-        guard force, let root = layer, bounds.width > 0, bounds.height > 0 else { return }
+        guard force, bounds.width > 0, bounds.height > 0 else { return }
+        let root = backingLayer
         laidOutSize = bounds.size
         blobs.forEach { $0.removeFromSuperlayer() }
         blobs = []
@@ -135,8 +161,8 @@ final class StageView: NSView {
             let duration = 18 + Double(index) * 3.5
 
             let move = CABasicAnimation(keyPath: "position")
-            move.fromValue = NSValue(point: point(anchor.from))
-            move.toValue = NSValue(point: point(anchor.to))
+            move.fromValue = animationValue(point(anchor.from))
+            move.toValue = animationValue(point(anchor.to))
 
             let grow = CABasicAnimation(keyPath: "transform.scale")
             grow.fromValue = 0.92

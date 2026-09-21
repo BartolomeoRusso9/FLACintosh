@@ -1,4 +1,3 @@
-import AppKit
 import CryptoKit
 import Foundation
 import Observation
@@ -210,7 +209,7 @@ final class Scrobbler {
             return
         }
         if let url = URL(string: "https://www.last.fm/api/auth/?api_key=\(key)&token=\(token)") {
-            NSWorkspace.shared.open(url)
+            openInBrowser(url)
         }
         lastFMStatus = .needsSetup("Waiting for approval in your browser…")
 

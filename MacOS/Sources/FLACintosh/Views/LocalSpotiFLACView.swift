@@ -1,4 +1,4 @@
-import AppKit
+#if os(macOS)
 import SwiftUI
 
 /// SpotiFLAC installed on this Mac: its terminal UI in Terminal if it
@@ -54,7 +54,7 @@ struct LocalSpotiFLACView: View {
         .task { spotiflac.detect() }
         // Coming back from Terminal after updating is the usual way this
         // screen's answer goes stale, so returning to the app re-checks.
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: .appDidBecomeActive)) { _ in
             spotiflac.detect()
         }
     }
@@ -165,8 +165,7 @@ struct LocalSpotiFLACView: View {
                 .textSelection(.enabled)
                 .lineLimit(3)
             Button {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(command, forType: .string)
+                copyToPasteboard(command)
             } label: {
                 Image(systemName: "doc.on.doc")
             }
@@ -185,3 +184,4 @@ struct LocalSpotiFLACView: View {
             .textSelection(.enabled)
     }
 }
+#endif

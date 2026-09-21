@@ -99,6 +99,26 @@ struct LibraryAlbum: Identifiable, Sendable, Equatable, Hashable {
     var duration: TimeInterval { tracks.compactMap(\.duration).reduce(0, +) }
 }
 
+extension URL {
+    /// The same server picture at another size.
+    ///
+    /// The library keeps a 320-pixel thumbnail of every album — a thousand
+    /// records must fit in memory — and that is sharp in a grid and soft in
+    /// anything large: on a phone's screen a sleeve 300 points wide is 900
+    /// pixels. The servers resize on request, so a big view asks again for
+    /// what it needs. Only the size is changed, so the credentials stay; a
+    /// URL with no size in it is returned as it is.
+    func requestingImageSize(_ pixels: Int) -> URL {
+        guard var components = URLComponents(url: self, resolvingAgainstBaseURL: false),
+              var items = components.queryItems,
+              let index = items.firstIndex(where: { $0.name == "size" || $0.name == "maxHeight" })
+        else { return self }
+        items[index].value = String(pixels)
+        components.queryItems = items
+        return components.url ?? self
+    }
+}
+
 /// An artist and the records of theirs that are on disk.
 struct LibraryArtist: Identifiable, Sendable, Hashable {
     var id: String { name }

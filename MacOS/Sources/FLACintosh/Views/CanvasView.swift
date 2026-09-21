@@ -1,5 +1,4 @@
 import AVFoundation
-import AppKit
 import SwiftUI
 
 /// A Spotify Canvas: a few seconds of silent video, looping where the sleeve
@@ -8,6 +7,7 @@ import SwiftUI
 /// Muted on purpose — the clip's own soundtrack, when it has one, is the
 /// song, already playing. It follows the music: paused with it, so a stopped
 /// record does not keep moving, and started again from where it was.
+#if os(macOS)
 struct CanvasView: NSViewRepresentable {
     let url: URL
     let isPlaying: Bool
@@ -28,27 +28,59 @@ struct CanvasView: NSViewRepresentable {
         view.stop()
     }
 }
+#else
+struct CanvasView: UIViewRepresentable {
+    let url: URL
+    let isPlaying: Bool
+
+    func makeUIView(context: Context) -> CanvasLayerView {
+        let view = CanvasLayerView()
+        view.load(url)
+        view.setPlaying(isPlaying)
+        return view
+    }
+
+    func updateUIView(_ view: CanvasLayerView, context: Context) {
+        view.load(url)
+        view.setPlaying(isPlaying)
+    }
+
+    static func dismantleUIView(_ view: CanvasLayerView, coordinator: ()) {
+        view.stop()
+    }
+}
+#endif
 
 /// The layer-backed view the clip draws into: an `AVPlayerLayer` filling
 /// its bounds, cropped rather than letterboxed — a canvas is tall, the
 /// sleeve is square, and black bars would look like a broken video.
-final class CanvasLayerView: NSView {
+final class CanvasLayerView: PlatformView {
     private let playerLayer = AVPlayerLayer()
     private var player: AVQueuePlayer?
     private var looper: AVPlayerLooper?
     private var loaded: URL?
 
-    override init(frame: NSRect) {
+    override init(frame: CGRect) {
         super.init(frame: frame)
-        wantsLayer = true
         playerLayer.videoGravity = .resizeAspectFill
-        layer?.addSublayer(playerLayer)
+        backingLayer.addSublayer(playerLayer)
     }
 
     required init?(coder: NSCoder) { nil }
 
+    #if os(macOS)
     override func layout() {
         super.layout()
+        fitPlayerLayer()
+    }
+    #else
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        fitPlayerLayer()
+    }
+    #endif
+
+    private func fitPlayerLayer() {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         playerLayer.frame = bounds

@@ -1,5 +1,8 @@
-import AppKit
 import SwiftUI
+
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// The shelves in the sidebar. Deliberately the ones that mean something for
 /// a folder of files: no Radio, no store, nothing that needs an account.
@@ -62,6 +65,10 @@ enum LibrarySection: Identifiable, Hashable {
 struct Sidebar: View {
     @Binding var selection: LibrarySection
     let library: LibraryStore
+    /// Shelves that are somewhere else already. On a phone Home, Download and
+    /// Recap are tabs of their own, and listing them here too would be two
+    /// ways to the same place.
+    var excluding: Set<LibrarySection> = []
     let onChooseFolder: () -> Void
     let onAddServer: () -> Void
 
@@ -71,13 +78,13 @@ struct Sidebar: View {
     var body: some View {
         List {
             Section("Library") {
-                ForEach(LibrarySection.shelves) { section in
+                ForEach(LibrarySection.shelves.filter { !excluding.contains($0) }) { section in
                     row(section)
                 }
             }
 
             if let offline, offline.albumCount > 0 || !offline.progress.isEmpty {
-                Section("On This Mac") {
+                Section("On \(ThisDevice.capitalized)") {
                     row(.downloaded)
                 }
             }
@@ -86,6 +93,22 @@ struct Sidebar: View {
                 if let playlists {
                     ForEach(playlists.playlists) { playlist in
                         row(.playlist(.local(playlist.id)), title: playlist.name)
+                            #if os(iOS)
+                            // Swipe to delete, the way every list on a phone
+                            // does it. Not a full swipe: that would delete on
+                            // a stray flick, and the songs stay in the library
+                            // but the playlist is gone.
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    // A playlist open beside this list, on an
+                                    // iPad, goes with it.
+                                    if selection == .playlist(.local(playlist.id)) { selection = .home }
+                                    playlists.delete(playlist.id)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
+                            #endif
                     }
                 }
                 ForEach(library.serverPlaylists) { playlist in
@@ -100,12 +123,16 @@ struct Sidebar: View {
                 }
             }
 
-            Section("Listening") {
-                row(.recap)
+            if !excluding.contains(.recap) {
+                Section("Listening") {
+                    row(.recap)
+                }
             }
 
-            Section("Get More") {
-                row(.download)
+            if !excluding.contains(.download) {
+                Section("Get More") {
+                    row(.download)
+                }
             }
 
             // A row rather than something pinned to the bottom of the
@@ -335,6 +362,8 @@ struct AlbumDetail: View {
     let library: LibraryStore
 
     @Environment(OfflineStore.self) private var offline: OfflineStore?
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var editing: LibraryTrack?
     /// The sleeve's own main colour, darkened to sit behind text — the band
@@ -346,15 +375,15 @@ struct AlbumDetail: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 header
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, sizeClass == .compact ? 16 : 32)
                     .padding(.top, 30)
                     .padding(.bottom, 28)
 
                 tracks
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, sizeClass == .compact ? 8 : 24)
 
                 footer
-                    .padding(.horizontal, 32)
+                    .padding(.horizontal, sizeClass == .compact ? 16 : 32)
                     .padding(.top, 22)
 
                 if !moreByArtist.isEmpty {
@@ -376,6 +405,10 @@ struct AlbumDetail: View {
             }
         }
         .navigationTitle(album.title)
+        #if os(iOS)
+        // The page's own heading says it again, larger, right below.
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .task(id: album.id) {
             let cover = album.cover
             let palette = await Task.detached(priority: .utility) {
@@ -390,12 +423,44 @@ struct AlbumDetail: View {
 
     // MARK: - Header
 
+    /// The sleeve beside the details in a window; above them on a phone,
+    /// where a 270-point sleeve leaves no room beside it for anything.
+    @ViewBuilder
     private var header: some View {
-        HStack(alignment: .bottom, spacing: 30) {
-            AlbumArt(id: album.id, data: album.cover, corner: 12)
-                .frame(width: 270, height: 270)
-                .shadow(color: .black.opacity(0.35), radius: 22, y: 12)
+        if sizeClass == .compact {
+            VStack(alignment: .leading, spacing: 20) {
+                sleeve
+                    .frame(maxWidth: 300)
+                    .shadow(color: .black.opacity(0.35), radius: 22, y: 12)
+                    .frame(maxWidth: .infinity)
+                headerInfo
+            }
+        } else {
+            HStack(alignment: .bottom, spacing: 30) {
+                sleeve
+                    .frame(width: 270, height: 270)
+                    .shadow(color: .black.opacity(0.35), radius: 22, y: 12)
+                headerInfo
+                Spacer(minLength: 0)
+            }
+        }
+    }
 
+    /// The thumbnail at once, and over it the sleeve at the size this page
+    /// draws it as soon as the server has sent that. The thumbnail alone is
+    /// 320 pixels: stretched over 270 points it is soft on a Mac and plainly
+    /// blurred on a phone, where the same points are three pixels each.
+    private var sleeve: some View {
+        AlbumArt(id: album.id, data: album.cover, corner: 12)
+            .overlay {
+                if let url = album.tracks.lazy.compactMap(\.artworkURL).first?.requestingImageSize(1200) {
+                    RemoteCover(url: url, maxPixel: 1200, showsPlaceholder: false)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+    }
+
+    private var headerInfo: some View {
             VStack(alignment: .leading, spacing: 7) {
                 Text(kind)
                     .font(.system(size: 11, weight: .bold))
@@ -420,14 +485,16 @@ struct AlbumDetail: View {
                         model.play(album.tracks, startingAt: 0)
                     } label: {
                         Label("Play", systemImage: "play.fill")
-                            .frame(width: 86)
+                            .lineLimit(1)
+                            .frame(minWidth: 86)
                     }
                     Button {
                         model.isShuffling = true
                         model.play(album.tracks, startingAt: Int.random(in: album.tracks.indices))
                     } label: {
                         Label("Shuffle", systemImage: "shuffle")
-                            .frame(width: 86)
+                            .lineLimit(1)
+                            .frame(minWidth: 86)
                     }
                     Menu {
                         AddToPlaylistMenu(tracks: album.tracks, suggestedName: album.title)
@@ -459,8 +526,6 @@ struct AlbumDetail: View {
                     lyricsHunt
                 }
             }
-            Spacer(minLength: 0)
-        }
     }
 
     /// Download progress, or that the album is on this Mac — server albums
@@ -670,34 +735,57 @@ struct TrackRow: View {
     var onEdit: (() -> Void)?
     /// Only on a playlist's own page.
     var onRemoveFromPlaylist: (() -> Void)?
+    /// The album's cover, in lists of songs from many records, where a number
+    /// says nothing and the sleeve is what one recognises a song by. Without
+    /// it the row starts with a number, the way an album's own page does.
+    var cover: (id: String, data: Data?)? = nil
 
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var hovering = false
 
     var body: some View {
         HStack(spacing: 12) {
-            ZStack {
-                if isCurrent {
-                    Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Palette.red)
-                } else if hovering {
-                    Image(systemName: "play.fill").font(.system(size: 11))
-                } else if let position {
-                    Text("\(position)")
-                        .font(.system(size: 12, design: .rounded))
-                        .foregroundStyle(.secondary)
+            if let cover {
+                AlbumArt(id: cover.id, data: cover.data, corner: 5)
+                    .frame(width: 44, height: 44)
+                    .overlay {
+                        if isCurrent {
+                            Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(.black.opacity(0.45), in: RoundedRectangle(cornerRadius: 5, style: .continuous))
+                        }
+                    }
+            } else if sizeClass != .compact || position != nil {
+                // A phone's row with neither a cover nor a number has nothing
+                // to put here — the current song is the red title — and the
+                // empty column pushed every title a hand's width in.
+                ZStack {
+                    if isCurrent {
+                        Image(systemName: isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(Palette.red)
+                    } else if hovering {
+                        Image(systemName: "play.fill").font(.system(size: 11))
+                    } else if let position {
+                        Text("\(position)")
+                            .font(.list(12, design: .rounded))
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .frame(width: 24)
             }
-            .frame(width: 24)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(track.title)
-                    .font(.system(size: 13))
+                    .font(.list(13))
                     .foregroundStyle(isCurrent ? Palette.red : .primary)
                     .lineLimit(1)
                 if let subtitle {
                     Text(subtitle)
-                        .font(.system(size: 11))
+                        .font(.list(11))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -707,8 +795,11 @@ struct TrackRow: View {
 
             // Only in lists that mix records. Inside an album the header
             // already says where it is, and a label on every row is noise.
-            if subtitle != nil {
-                SourceBadge(source: track.source)
+            //
+            // Not beside a cover: the row is already narrow, and the label
+            // took half of it, leaving the title a few letters.
+            if subtitle != nil, cover == nil {
+                SourceBadge(source: track.source, iconOnly: sizeClass == .compact)
             }
 
             if track.hasLyrics {
@@ -718,16 +809,20 @@ struct TrackRow: View {
                     .help("Has timed lyrics")
             }
             Text(Self.clock(track.duration))
-                .font(.system(size: 12, design: .monospaced))
+                .font(.list(12, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, cover == nil ? RowMetrics.vertical : 6)
         .padding(.horizontal, 8)
         .background(hovering ? Color.primary.opacity(0.06) : .clear, in: RoundedRectangle(cornerRadius: 6))
         .contentShape(Rectangle())
         .onHover { hovering = $0 }
+        #if os(macOS)
         .onTapGesture(count: 2, perform: onPlay)
+        #endif
+        // On a phone a double tap registered beside this one makes every
+        // single tap wait to see whether a second is coming.
         .onTapGesture(perform: onPlay)
         .contextMenu {
             Button("Play", action: onPlay)
@@ -743,11 +838,13 @@ struct TrackRow: View {
                 Button("Get Info…", action: onEdit)
             }
             // A server track has no file on this Mac to show.
+            #if os(macOS)
             if track.url.isFileURL {
                 Button("Show in Finder") {
                     NSWorkspace.shared.activateFileViewerSelecting([track.url])
                 }
             }
+            #endif
         }
     }
 
@@ -762,7 +859,13 @@ struct SongsList: View {
     let songs: [LibraryTrack]
     let model: PlaybackModel
     let library: LibraryStore
+    /// Each row led by its album's cover, with the artist under the title; not
+    /// the album as well, which the cover says. Off, a row is title and
+    /// "artist — album" with the source beside it: the denser of the two.
+    var showsCovers = false
 
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var editing: LibraryTrack?
 
     var body: some View {
@@ -771,14 +874,15 @@ struct SongsList: View {
                 ForEach(Array(songs.enumerated()), id: \.element.id) { index, track in
                     TrackRow(
                         track: track,
-                        subtitle: "\(track.artist) — \(track.album)",
+                        subtitle: showsCovers ? track.artist : "\(track.artist) — \(track.album)",
                         isCurrent: model.currentTrack?.id == track.id,
                         isPlaying: model.isPlaying,
                         onPlay: { model.play(songs, startingAt: index) },
                         onFindLyrics: { library.findLyrics(for: [track]) },
-                        onEdit: { editing = track }
+                        onEdit: { editing = track },
+                        cover: showsCovers ? library.cover(for: track) ?? (id: "none-\(track.id.absoluteString)", data: nil) : nil
                     )
-                    Divider().padding(.leading, 44)
+                    Divider().padding(.leading, showsCovers ? 64 : (sizeClass == .compact ? 8 : 44))
                 }
             }
             .padding(.horizontal, 20)

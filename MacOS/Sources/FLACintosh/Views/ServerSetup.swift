@@ -57,7 +57,9 @@ struct ServerSetup: View {
             }
         }
         .padding(22)
+        #if os(macOS)
         .frame(width: 460)
+        #endif
     }
 
     /// Credentials are checked before they are saved: a server row that

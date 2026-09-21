@@ -251,6 +251,24 @@ struct SectionToolbar<Sort: SectionSort>: ToolbarContent {
     @Binding var ascending: Bool
 
     var body: some ToolbarContent {
+        #if os(iOS)
+        // Two items of their own, and the view choice a menu: grouped, the
+        // segmented picker's capsule was drawn over the sort button's, one
+        // outline inside the other.
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Picker("View", selection: $mode) {
+                    ForEach(modes) { mode in
+                        Label(mode.title, systemImage: mode.symbol).tag(mode)
+                    }
+                }
+                .pickerStyle(.inline)
+            } label: {
+                Image(systemName: mode.symbol)
+            }
+        }
+        ToolbarItem(placement: .primaryAction) { sortMenu }
+        #else
         ToolbarItemGroup(placement: .primaryAction) {
             Picker("View", selection: $mode) {
                 ForEach(modes) { mode in
@@ -263,24 +281,29 @@ struct SectionToolbar<Sort: SectionSort>: ToolbarContent {
             .labelsHidden()
             .help("View as")
 
-            Menu {
-                Picker("Sort By", selection: $sort) {
-                    ForEach(Array(Sort.allCases)) { option in
-                        Text(option.title).tag(option)
-                    }
-                }
-                .pickerStyle(.inline)
-
-                Picker("Order", selection: $ascending) {
-                    Text(sort.ascendingLabel).tag(true)
-                    Text(sort.descendingLabel).tag(false)
-                }
-                .pickerStyle(.inline)
-            } label: {
-                Label("Sort: \(sort.title)", systemImage: "arrow.up.arrow.down")
-            }
-            .help("Sorted by \(sort.title.lowercased()), \((ascending ? sort.ascendingLabel : sort.descendingLabel).lowercased())")
+            sortMenu
         }
+        #endif
+    }
+
+    private var sortMenu: some View {
+        Menu {
+            Picker("Sort By", selection: $sort) {
+                ForEach(Array(Sort.allCases)) { option in
+                    Text(option.title).tag(option)
+                }
+            }
+            .pickerStyle(.inline)
+
+            Picker("Order", selection: $ascending) {
+                Text(sort.ascendingLabel).tag(true)
+                Text(sort.descendingLabel).tag(false)
+            }
+            .pickerStyle(.inline)
+        } label: {
+            Label("Sort: \(sort.title)", systemImage: "arrow.up.arrow.down")
+        }
+        .help("Sorted by \(sort.title.lowercased()), \((ascending ? sort.ascendingLabel : sort.descendingLabel).lowercased())")
     }
 }
 
@@ -489,13 +512,13 @@ struct ArtistDetail: View {
                             model.isShuffling = false
                             model.play(tracks, startingAt: 0)
                         } label: {
-                            Label("Play", systemImage: "play.fill").frame(width: 76)
+                            Label("Play", systemImage: "play.fill").lineLimit(1).frame(minWidth: 76)
                         }
                         Button {
                             model.isShuffling = true
                             model.play(tracks, startingAt: Int.random(in: tracks.indices))
                         } label: {
-                            Label("Shuffle", systemImage: "shuffle").frame(width: 76)
+                            Label("Shuffle", systemImage: "shuffle").lineLimit(1).frame(minWidth: 76)
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -534,16 +557,27 @@ struct SongsSection: View {
     @AppStorage("view.songs.mode") private var mode: ViewMode = .list
     @AppStorage("view.songs.sort") private var sort: SongSort = .title
     @AppStorage("view.songs.ascending") private var ascending = true
+    /// Compact on a phone; never on the Mac, where it is nil.
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         let sorted = sort.apply(songs, ascending: ascending, sourceName: library.name(of:))
+        let phone = sizeClass == .compact
 
         Group {
             switch mode {
             case .table:
-                SongsTable(songs: sorted, model: model, library: library)
+                // A table is columns, and a phone has room for one: the
+                // title, and nothing else — which made the two views look
+                // the same. There the second view is the dense list instead.
+                if phone {
+                    SongsList(songs: sorted, model: model, library: library)
+                } else {
+                    SongsTable(songs: sorted, model: model, library: library)
+                }
             case .list, .grid:
-                SongsList(songs: sorted, model: model, library: library)
+                // On a phone the list leads with the covers.
+                SongsList(songs: sorted, model: model, library: library, showsCovers: phone)
             }
         }
         .toolbar {

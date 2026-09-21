@@ -261,12 +261,23 @@ final class StreamEffects: @unchecked Sendable {
                     effects.process(buffers, frames: Int(framesOut.pointee))
                 }
             )
+            let parameters = AVMutableAudioMixInputParameters(track: track)
+            // Swift 6.4's SDK imports the tap as a reference the compiler
+            // manages; before that it came back `Unmanaged` and was released
+            // by hand. CI still builds on the older toolchain.
+            #if compiler(>=6.4)
+            var tap: MTAudioProcessingTap?
+            guard MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &tap) == noErr,
+                  let tap
+            else { return }
+            parameters.audioTapProcessor = tap
+            #else
             var unmanagedTap: Unmanaged<MTAudioProcessingTap>?
             guard MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &unmanagedTap) == noErr,
                   let unmanagedTap
             else { return }
-            let parameters = AVMutableAudioMixInputParameters(track: track)
             parameters.audioTapProcessor = unmanagedTap.takeRetainedValue()
+            #endif
             let mix = AVMutableAudioMix()
             mix.inputParameters = [parameters]
             item.audioMix = mix

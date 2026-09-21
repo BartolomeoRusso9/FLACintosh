@@ -1,6 +1,8 @@
 import Foundation
+import ImageIO
 import Observation
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// Playlists: your own, kept on this Mac, and the ones on your servers.
 ///
@@ -37,6 +39,12 @@ final class PlaylistStore {
         var entries: [Entry]
         var created: Date
         var modified: Date
+        /// A few words about the playlist, under its name. Optional, and
+        /// absent from files written before it existed, which still read.
+        var note: String? = nil
+        /// A picture chosen for it — a file in the covers folder. Without
+        /// one the page shows a mosaic of its songs' sleeves.
+        var coverFile: String? = nil
     }
 
     /// A playlist from either place, the way the sidebar and the playlist
@@ -89,8 +97,82 @@ final class PlaylistStore {
     }
 
     func delete(_ id: UUID) {
+        removeCoverFile(of: id)
         playlists.removeAll { $0.id == id }
         save()
+    }
+
+    // MARK: - Details
+
+    /// Name and description, as the editor sets them together. An empty name
+    /// is ignored — a playlist with none has nothing to be listed by — and an
+    /// empty description takes the description away.
+    func setDetails(_ id: UUID, name: String, note: String) {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        update(id) {
+            if !name.isEmpty { $0.name = name }
+            $0.note = note.isEmpty ? nil : note
+        }
+    }
+
+    /// A picture of the user's own for the playlist: any image, kept as a
+    /// JPEG of at most 1024 pixels. `nil` takes it away, and the mosaic
+    /// comes back. A picture that cannot be read changes nothing.
+    ///
+    /// Each one gets a new file name, so that a picture already drawn and
+    /// remembered under the old name is not shown in place of the new one.
+    func setCover(_ id: UUID, imageData: Data?) {
+        guard playlist(id) != nil else { return }
+        var file: String?
+        if let imageData {
+            guard let jpeg = Self.jpeg(from: imageData, maxPixel: 1024),
+                  let folder = Self.coversFolder
+            else { return }
+            let name = "\(id.uuidString)-\(UUID().uuidString.prefix(8)).jpg"
+            guard (try? jpeg.write(to: folder.appendingPathComponent(name), options: .atomic)) != nil else { return }
+            file = name
+        }
+        removeCoverFile(of: id)
+        update(id) { $0.coverFile = file }
+    }
+
+    /// The picture's bytes, for drawing it.
+    func coverData(of playlist: Playlist) -> Data? {
+        guard let file = playlist.coverFile, let folder = Self.coversFolder else { return nil }
+        return try? Data(contentsOf: folder.appendingPathComponent(file))
+    }
+
+    private func removeCoverFile(of id: UUID) {
+        guard let file = playlist(id)?.coverFile, let folder = Self.coversFolder else { return }
+        try? FileManager.default.removeItem(at: folder.appendingPathComponent(file))
+    }
+
+    private static var coversFolder: URL? {
+        guard let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return nil }
+        let folder = support
+            .appendingPathComponent("FLACintosh", isDirectory: true)
+            .appendingPathComponent("PlaylistCovers", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+    }
+
+    /// The image scaled to fit `maxPixel` and encoded as a JPEG, with its
+    /// orientation applied: a photo from a phone is stored sideways and
+    /// turned by a flag that a plain copy of the pixels would lose.
+    private static func jpeg(from data: Data, maxPixel: Int) -> Data? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+        ]
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let output = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil) else { return nil }
+        CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.85] as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return output as Data
     }
 
     func add(_ tracks: [LibraryTrack], to id: UUID) {

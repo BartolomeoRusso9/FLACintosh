@@ -1,6 +1,16 @@
 import Foundation
 import Observation
 
+#if !os(macOS)
+/// Nothing to bridge to: SpotiFLAC's own command line lives on a computer, and
+/// an iPhone cannot run it. Downloads go through the server, as they do from
+/// the Mac. The type exists so the screens that hold one need no `#if` of
+/// their own.
+@MainActor
+@Observable
+final class SpotiFLACBridge {}
+#else
+
 /// Optional glue to SpotiFLAC, the downloader this player was built to sit
 /// next to.
 ///
@@ -255,3 +265,4 @@ final class SpotiFLACBridge {
         return String(data: data, encoding: .utf8)
     }
 }
+#endif

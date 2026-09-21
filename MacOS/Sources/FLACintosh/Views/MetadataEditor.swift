@@ -69,7 +69,9 @@ struct MetadataEditor: View {
             }
         }
         .padding(22)
+        #if os(macOS)
         .frame(width: 430)
+        #endif
         .task { load() }
     }
 

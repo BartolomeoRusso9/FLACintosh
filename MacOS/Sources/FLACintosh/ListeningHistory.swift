@@ -1,4 +1,3 @@
-import AppKit
 import Foundation
 import Observation
 
@@ -65,7 +64,7 @@ final class ListeningHistory {
                 self?.sample()
             }
         }
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+        NotificationCenter.default.addObserver(forName: .appWillTerminate, object: nil, queue: .main) { [weak self] _ in
             MainActor.assumeIsolated { self?.finish() }
         }
     }

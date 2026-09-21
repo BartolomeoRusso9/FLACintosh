@@ -1,4 +1,4 @@
-import AppKit
+import ImageIO
 import SwiftUI
 
 /// Decoded sleeves, kept so scrolling the grid does not decode the same
@@ -7,7 +7,7 @@ import SwiftUI
 final class CoverCache {
     static let shared = CoverCache()
 
-    private var images: [String: NSImage] = [:]
+    private var images: [String: PlatformImage] = [:]
     private var order: [String] = []
     /// Roughly a screenful of grid, several times over. Past that the oldest
     /// go: a library can be thousands of records and every one of them
@@ -15,7 +15,7 @@ final class CoverCache {
     private let limit = 400
 
     /// Already decoded, if it is: no wait for a tile scrolled back into view.
-    func cached(id: String) -> NSImage? { images[id] }
+    func cached(id: String) -> PlatformImage? { images[id] }
 
     /// Decodes a cover off the main thread, at no more pixels than it will be
     /// drawn with.
@@ -25,7 +25,7 @@ final class CoverCache {
     /// 3000-pixel sleeve for a 420-point square, and a hitch in every grid
     /// that scrolls a new row in. ImageIO makes a thumbnail of the right size
     /// here instead, decoded before it is handed over.
-    func load(id: String, data: Data?, maxPixel: Int) async -> NSImage? {
+    func load(id: String, data: Data?, maxPixel: Int) async -> PlatformImage? {
         if let cached = images[id] { return cached }
         guard let data else { return nil }
 
@@ -41,7 +41,7 @@ final class CoverCache {
         }.value
         guard let decoded else { return nil }
 
-        let image = NSImage(cgImage: decoded, size: NSSize(width: decoded.width, height: decoded.height))
+        let image = PlatformImage.make(cgImage: decoded)
         images[id] = image
         order.append(id)
         if order.count > limit {
@@ -65,15 +65,16 @@ struct AlbumArt: View {
     /// passes something darker.
     var placeholder: AnyShapeStyle = AnyShapeStyle(.quaternary)
 
-    @State private var image: NSImage?
+    @State private var image: PlatformImage?
     @State private var side: CGFloat = 0
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         Rectangle()
             .fill(placeholder)
             .overlay {
                 if let image {
-                    Image(nsImage: image)
+                    Image(platformImage: image)
                         .resizable()
                         .interpolation(.medium)
                         .aspectRatio(contentMode: .fill)
@@ -121,7 +122,7 @@ struct AlbumArt: View {
     /// up to a few steps so resizing a window does not decode again for
     /// every point it changes.
     private var bucket: Int {
-        let pixels = side * (NSScreen.main?.backingScaleFactor ?? 2)
+        let pixels = side * displayScale
         return [128, 256, 512, 1024, 2048].first { CGFloat($0) >= pixels } ?? 2048
     }
 

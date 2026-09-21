@@ -15,6 +15,7 @@ import Security
 enum KeychainSignature {
     private static let defaultsKey = "keychainReaderSignature"
 
+    #if os(macOS)
     /// This copy's cdhash, as the keychain's access list records it.
     static let current: String? = {
         var code: SecCode?
@@ -30,10 +31,19 @@ enum KeychainSignature {
         return unique.map { String(format: "%02x", $0) }.joined()
     }()
 
+    #else
+    /// iOS has no per-app access list to prompt about: nothing to track.
+    static let current: String? = nil
+    #endif
+
     /// True when this copy is not the one that last used the passwords.
     static var mayAsk: Bool {
+        #if os(macOS)
         guard let current else { return true }
         return UserDefaults.standard.string(forKey: defaultsKey) != current
+        #else
+        return false
+        #endif
     }
 
     /// This copy has just been handed a password, or saved one — either way

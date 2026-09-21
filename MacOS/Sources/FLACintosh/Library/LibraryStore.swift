@@ -43,8 +43,12 @@ final class LibraryStore {
     /// The visible sources' records, merged. Rebuilt when a source finishes
     /// a batch or is shown or hidden — not recomputed on every read, which
     /// with a thousand albums would be a sort per frame.
-    private(set) var albums: [LibraryAlbum] = []
-    private(set) var tracks: [LibraryTrack] = []
+    /// Changes whenever the albums or tracks do. For what is worked out from
+    /// them and worth keeping — a sorted list, an index — to know when it is
+    /// out of date without comparing the library to itself.
+    private(set) var revision = 0
+    private(set) var albums: [LibraryAlbum] = [] { didSet { revision &+= 1 } }
+    private(set) var tracks: [LibraryTrack] = [] { didSet { revision &+= 1 } }
     /// Playlists from the visible servers.
     private(set) var serverPlaylists: [ServerPlaylist] = []
     /// Every visible track by its stable key, for turning a playlist's list
@@ -90,12 +94,29 @@ final class LibraryStore {
     init() {
         servers = Self.loadServers()
         hidden = Self.loadHidden()
+        #if os(iOS)
+        // A folder picked in Files, opened again from the bookmark saved when
+        // it was picked. Before the plain path: on iOS the path alone is a
+        // place the app is no longer allowed to read.
+        if let bookmarked = Self.resolveBookmarkedRoot() {
+            root = bookmarked
+            return
+        }
+        #endif
         if let path = UserDefaults.standard.string(forKey: Self.rootKey) {
             root = URL(fileURLWithPath: path)
         } else {
+            #if os(macOS)
             root = FileManager.default
                 .urls(for: .musicDirectory, in: .userDomainMask)
                 .first ?? FileManager.default.homeDirectoryForCurrentUser
+            #else
+            // No Music folder on iOS. The app's own Documents is the place a
+            // user can drop files into from the Files app.
+            root = FileManager.default
+                .urls(for: .documentDirectory, in: .userDomainMask)
+                .first ?? URL(fileURLWithPath: NSTemporaryDirectory())
+            #endif
         }
     }
 
@@ -175,8 +196,34 @@ final class LibraryStore {
     }
 
     var songs: [LibraryTrack] {
-        tracks.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        // Sorted once per change to the library, not once per read: this is
+        // read from every row of a search page and from every redraw of the
+        // Songs shelf, and a localised sort of a whole library is not cheap.
+        if let cached = sortedSongs, cached.revision == revision { return cached.songs }
+        let sorted = tracks.sorted { $0.title.localizedStandardCompare($1.title) == .orderedAscending }
+        sortedSongs = (revision, sorted)
+        return sorted
     }
+
+    @ObservationIgnored private var sortedSongs: (revision: Int, songs: [LibraryTrack])?
+
+    /// The cover of the album a track is on: the small one the scan kept, and
+    /// the album's id to key it by. A list of songs from a thousand records
+    /// needs one per row, so the lookup is built once per change to the
+    /// library rather than searched for.
+    func cover(for track: LibraryTrack) -> (id: String, data: Data?)? {
+        if coverIndex?.revision != revision {
+            var byTrack: [URL: (id: String, data: Data?)] = [:]
+            byTrack.reserveCapacity(tracks.count)
+            for album in albums {
+                for track in album.tracks { byTrack[track.id] = (album.id, album.cover) }
+            }
+            coverIndex = (revision, byTrack)
+        }
+        return coverIndex?.byTrack[track.id]
+    }
+
+    @ObservationIgnored private var coverIndex: (revision: Int, byTrack: [URL: (id: String, data: Data?)])?
 
     /// Every visible track the way the records run: by artist, then album,
     /// then the album's own order. What "Play All" plays.
@@ -264,10 +311,43 @@ final class LibraryStore {
     // MARK: - Root
 
     func setRoot(_ url: URL) {
+        #if os(iOS)
+        Self.keepAccess(to: url)
+        #endif
         root = url
         UserDefaults.standard.set(url.path, forKey: Self.rootKey)
         reload(.folder)
     }
+
+    #if os(iOS)
+    @ObservationIgnored private static let bookmarkKey = "libraryRootBookmark"
+
+    /// A folder chosen in Files is readable only while the app holds its
+    /// security scope, and the scope outlives a launch only as a bookmark.
+    /// Called once when the folder is picked.
+    private static func keepAccess(to url: URL) {
+        // False for a folder inside the app's own container, which needs no
+        // scope; either way the bookmark below is what is worth keeping.
+        _ = url.startAccessingSecurityScopedResource()
+        if let data = try? url.bookmarkData() {
+            UserDefaults.standard.set(data, forKey: bookmarkKey)
+        }
+    }
+
+    private static func resolveBookmarkedRoot() -> URL? {
+        guard let data = UserDefaults.standard.data(forKey: bookmarkKey) else { return nil }
+        var stale = false
+        guard let url = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &stale)
+        else { return nil }
+        _ = url.startAccessingSecurityScopedResource()
+        // Moved or renamed since: the old bookmark still found it, and a new
+        // one will keep finding it.
+        if stale, let fresh = try? url.bookmarkData() {
+            UserDefaults.standard.set(fresh, forKey: bookmarkKey)
+        }
+        return url
+    }
+    #endif
 
     func rescanIfNeeded() {
         guard states.isEmpty else { return }

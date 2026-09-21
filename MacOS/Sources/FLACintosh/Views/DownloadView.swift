@@ -43,10 +43,12 @@ struct DownloadView: View {
                     }
                 }
 
+                #if os(macOS)
                 Divider()
 
                 LocalSpotiFLACView(spotiflac: local, library: library)
                     .padding(.bottom, 20)
+                #endif
             }
             .padding(.horizontal, 28)
             .padding(.top, 18)
@@ -60,7 +62,9 @@ struct DownloadView: View {
         .sheet(isPresented: $editingServer) {
             ServerForm(server: server) { editingServer = false }
                 .padding(24)
+                #if os(macOS)
                 .frame(width: 460)
+                #endif
         }
     }
 
@@ -208,25 +212,64 @@ struct SectionHeading: View {
 struct RemoteCover: View {
     let url: URL?
     var symbol = "music.note"
+    /// The most pixels it will be drawn with, across. A row's thumbnail does
+    /// not need the 640-pixel picture the catalogue sends.
+    var maxPixel = 600
+    /// False when it is laid over a picture already there — the sharp copy of
+    /// a thumbnail — where a grey square and a note would cover the thumbnail
+    /// until the real thing arrives.
+    var showsPlaceholder = true
+
+    @State private var image: PlatformImage?
 
     var body: some View {
         Rectangle()
-            .fill(Color.primary.opacity(0.07))
+            .fill(showsPlaceholder ? Color.primary.opacity(0.07) : Color.clear)
             .overlay {
-                AsyncImage(url: url) { phase in
-                    if let image = phase.image {
-                        image
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        Image(systemName: symbol)
-                            .font(.system(size: 22, weight: .light))
-                            .foregroundStyle(.tertiary)
-                    }
+                if let image {
+                    Image(platformImage: image)
+                        .resizable()
+                        .scaledToFill()
+                } else if showsPlaceholder {
+                    Image(systemName: symbol)
+                        .font(.system(size: 22, weight: .light))
+                        .foregroundStyle(.tertiary)
                 }
             }
             .clipped()
+            .task(id: url) { await load() }
     }
+
+    /// `AsyncImage` fetched every picture at full size, all at once, decoded
+    /// it on the main thread and forgot it when its row scrolled away — a
+    /// page of results stuttered on the way down and again on the way back.
+    /// Here a cover is fetched through a cache that keeps it, made small
+    /// enough for where it is drawn off the main thread, and kept decoded.
+    private func load() async {
+        guard let url else {
+            image = nil
+            return
+        }
+        let key = "\(url.absoluteString)@\(maxPixel)"
+        if let cached = CoverCache.shared.cached(id: key) {
+            image = cached
+            return
+        }
+        guard let (data, _) = try? await Self.session.data(from: url), !Task.isCancelled else { return }
+        let loaded = await CoverCache.shared.load(id: key, data: data, maxPixel: maxPixel)
+        guard !Task.isCancelled else { return }
+        withAnimation(.easeOut(duration: 0.2)) { image = loaded }
+    }
+
+    /// A cache of its own: the shared session's is a few megabytes, and a
+    /// page of covers is more than that.
+    private static let session: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.urlCache = URLCache(memoryCapacity: 32 << 20, diskCapacity: 256 << 20)
+        configuration.requestCachePolicy = .returnCacheDataElseLoad
+        configuration.httpMaximumConnectionsPerHost = 6
+        return URLSession(configuration: configuration)
+    }()
 }
 
 /// An album, playlist or artist found by the search. The picture and the
@@ -316,22 +359,22 @@ private struct SongResultRow: View {
         HStack(spacing: 12) {
             NavigationLink(value: item) {
                 HStack(spacing: 12) {
-                    RemoteCover(url: item.cover)
+                    RemoteCover(url: item.cover, maxPixel: 160)
                         .frame(width: 42, height: 42)
                         .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
                     VStack(alignment: .leading, spacing: 2) {
                         Text(item.title)
-                            .font(.system(size: 13))
+                            .font(.list(13))
                             .lineLimit(1)
                         Text([item.subtitle, item.album].filter { !$0.isEmpty }.joined(separator: " — "))
-                            .font(.system(size: 11))
+                            .font(.list(11))
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                     Spacer(minLength: 8)
                     if let duration = item.duration {
                         Text(TrackTime.format(duration))
-                            .font(.system(size: 11).monospacedDigit())
+                            .font(.list(11).monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
                 }

@@ -9,6 +9,7 @@ struct SettingsView: View {
     let offline: OfflineStore
 
     var body: some View {
+        #if os(macOS)
         TabView {
             PlaybackSettings(effects: effects)
                 .tabItem { Label("Playback", systemImage: "play.circle") }
@@ -16,8 +17,38 @@ struct SettingsView: View {
                 .tabItem { Label("Services", systemImage: "antenna.radiowaves.left.and.right") }
             StorageSettings(offline: offline)
                 .tabItem { Label("Storage", systemImage: "internaldrive") }
+            AppearanceSettings()
+                .tabItem { Label("Appearance", systemImage: "paintpalette") }
         }
         .frame(width: 500)
+        #else
+        // A list of pages, not tabs: this already sits in a tab bar of its own.
+        NavigationStack {
+            List {
+                NavigationLink {
+                    PlaybackSettings(effects: effects).navigationTitle("Playback")
+                } label: {
+                    Label("Playback", systemImage: "play.circle")
+                }
+                NavigationLink {
+                    ServicesSettings(discord: discord, scrobbler: scrobbler).navigationTitle("Services")
+                } label: {
+                    Label("Services", systemImage: "antenna.radiowaves.left.and.right")
+                }
+                NavigationLink {
+                    StorageSettings(offline: offline).navigationTitle("Storage")
+                } label: {
+                    Label("Storage", systemImage: "internaldrive")
+                }
+                NavigationLink {
+                    AppearanceSettings().navigationTitle("Appearance")
+                } label: {
+                    Label("Appearance", systemImage: "paintpalette")
+                }
+            }
+            .navigationTitle("Settings")
+        }
+        #endif
     }
 
     static func size(_ bytes: Int64) -> String {
@@ -30,12 +61,67 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Appearance
+
+/// Which accent the app wears, and on what ground.
+private struct AppearanceSettings: View {
+    @AppStorage(Theme.storageKey) private var themeKey = Theme.ruby.rawValue
+
+    var body: some View {
+        Form {
+            Section {
+                ForEach(Theme.allCases) { theme in
+                    Button {
+                        themeKey = theme.rawValue
+                    } label: {
+                        HStack(spacing: 14) {
+                            // The two forms of its accent, overlapped: what
+                            // the buttons and the highlights will be made of.
+                            ZStack {
+                                Circle().fill(theme.light).frame(width: 26, height: 26).offset(x: -8)
+                                Circle().fill(theme.strong).frame(width: 26, height: 26).offset(x: 8)
+                            }
+                            .frame(width: 50, height: 28)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(theme.title).font(.system(size: 14, weight: .semibold))
+                                Text(theme.summary)
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 8)
+                            if themeKey == theme.rawValue {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(Palette.red)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            } header: {
+                Text("Theme")
+            } footer: {
+                Text("Only the colours change. The app is rebuilt in the new ones as soon as you choose.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        #if os(macOS)
+        .fixedSize(horizontal: false, vertical: true)
+        #endif
+    }
+}
+
 // MARK: - Playback
 
 private struct PlaybackSettings: View {
     @Bindable var effects: AudioEffects
     @AppStorage("showMenuBarPlayer") private var showMenuBarPlayer = true
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openEqualizer) private var openEqualizer
 
     var body: some View {
         Form {
@@ -58,7 +144,9 @@ private struct PlaybackSettings: View {
                     HStack {
                         Text(effects.equalizerOn ? (effects.presetName ?? "Manual") : "Off")
                             .foregroundStyle(.secondary)
-                        Button("Open Equalizer…") { openWindow(id: "equalizer") }
+                        Button("Open Equalizer…") {
+                            if let openEqualizer { openEqualizer() } else { openWindow(id: "equalizer") }
+                        }
                     }
                 }
             } header: {
@@ -74,14 +162,18 @@ private struct PlaybackSettings: View {
                 .foregroundStyle(.secondary)
             }
 
+            #if os(macOS)
             Section {
                 Toggle("Show the player in the menu bar", isOn: $showMenuBarPlayer)
             } header: {
                 Text("Menu Bar")
             }
+            #endif
         }
         .formStyle(.grouped)
+        #if os(macOS)
         .fixedSize(horizontal: false, vertical: true)
+        #endif
     }
 }
 
@@ -158,6 +250,7 @@ private struct ServicesSettings: View {
                 .foregroundStyle(.secondary)
             }
 
+            #if os(macOS)
             Section {
                 Toggle("Show what you're listening to", isOn: $discord.enabled)
                 TextField("Application ID", text: $discord.applicationID, prompt: Text("e.g. 1234567890123456789"))
@@ -188,9 +281,12 @@ private struct ServicesSettings: View {
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
             }
+            #endif
         }
         .formStyle(.grouped)
+        #if os(macOS)
         .frame(height: 620)
+        #endif
     }
 
     private var discordConnected: Bool {
@@ -318,7 +414,9 @@ private struct StorageSettings: View {
             }
         }
         .formStyle(.grouped)
+        #if os(macOS)
         .fixedSize(horizontal: false, vertical: true)
+        #endif
         .onAppear(perform: refresh)
         .confirmationDialog("Remove all downloaded music?", isPresented: $confirmingRemoveAll) {
             Button("Remove All Downloads", role: .destructive) { offline.removeAll() }

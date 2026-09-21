@@ -386,12 +386,12 @@ final class PlaybackModel {
     private func stepFade() {
         guard let fade else { return }
         let progress = min(max(Date.now.timeIntervalSince(fade.startedAt) / Self.crossfadeDuration, 0), 1)
-        try? fade.outgoing.setVolume(Float(volume * (1 - progress)))
-        try? player.setVolume(Float(volume * progress))
+        try? fade.outgoing.setDeckVolume(Float(volume * (1 - progress)))
+        try? player.setDeckVolume(Float(volume * progress))
         guard progress >= 1 else { return }
         fade.outgoing.stop()
         self.fade = nil
-        try? player.setVolume(Float(volume))
+        try? player.setDeckVolume(Float(volume))
     }
 
     /// Ends a fade early, leaving the incoming record at full volume.
@@ -399,7 +399,7 @@ final class PlaybackModel {
         guard let fade else { return }
         fade.outgoing.stop()
         self.fade = nil
-        try? player.setVolume(Float(volume))
+        try? player.setDeckVolume(Float(volume))
     }
 
     private func rebuildOrder() {
@@ -493,7 +493,7 @@ final class PlaybackModel {
     func loadRemoteDetails(for url: URL, listed: LibraryTrack?, generation: Int) {
         // The server's copy of the sleeve first, because it is small and
         // quick; the file's own, from its header, replaces it if it has one.
-        if let cover = listed?.artworkURL {
+        if let cover = listed?.artworkURL?.requestingImageSize(1000) {
             Task {
                 guard let fetched = try? await URLSession.shared.data(from: cover),
                       (fetched.1 as? HTTPURLResponse)?.statusCode == 200
@@ -622,7 +622,7 @@ final class PlaybackModel {
         // The engine is rebuilt for each file, so the volume goes back on —
         // silent if this file is the incoming half of a crossfade, since the
         // ramp is about to raise it.
-        try? player.setVolume(Float(fade == nil ? volume : 0))
+        try? player.setDeckVolume(Float(fade == nil ? volume : 0))
         currentReplayGain = nil
         applyEffects()
         displayTime = 0
@@ -678,7 +678,7 @@ final class PlaybackModel {
             }
             stream.volume = Float(volume)
             guard fade == nil else { return }
-            try? player.setVolume(Float(volume))
+            try? player.setDeckVolume(Float(volume))
         }
     }
 
